@@ -1,10 +1,10 @@
 -- ============================================
--- MM2 SCRIPT v10.0 - SPIN FLING SYSTEM
--- Механика: Телепорт вверх → Вращение → Захват → Отбрасывание → Возврат
+-- MM2 SCRIPT v10.1 - SPIN FLING SYSTEM (FIXED)
+-- Механика: Телепорт вверх → Вращение → Импульс жертве → Возврат
 -- ============================================
 
 print("========================================")
-print("⚡ MM2 Script v10.0 - SPIN FLING")
+print("⚡ MM2 Script v10.1 - SPIN FLING")
 print("========================================")
 
 local Players = game:GetService("Players")
@@ -28,7 +28,9 @@ local Config = {
         LaunchHeight = 500,        -- Высота телепорта (очень высоко!)
         SpinSpeed = 500000,        -- Скорость вращения (огромная!)
         SpinDuration = 1.0,        -- Длительность вращения (1 секунда)
-        SpinAxis = "Y"             -- Ось вращения: "X", "Y", "Z" или "ALL"
+        SpinAxis = "Y",            -- Ось вращения: "X", "Y", "Z" или "ALL"
+        LaunchPower = 100000,      -- Сила отбрасывания жертвы
+        LaunchDuration = 0.5       -- Длительность импульса жертвы
     },
     GunESP = {
         Enabled = false
@@ -299,8 +301,7 @@ local function SpinFling(targetPlayer)
         ).Unit
         
         -- Огромная сила отбрасывания
-        local launchPower = 100000
-        local launchVelocity = launchDirection * launchPower
+        local launchVelocity = launchDirection * Config.Fling.LaunchPower
         
         -- Применяем импульс через AssemblyLinearVelocity (мгновенно)
         targetHRP.AssemblyLinearVelocity = launchVelocity
@@ -317,8 +318,8 @@ local function SpinFling(targetPlayer)
         targetBV.Velocity = launchVelocity
         targetBV.Parent = targetHRP
         
-        -- Держим силу 0.5 секунды
-        task.wait(0.5)
+        -- Держим силу
+        task.wait(Config.Fling.LaunchDuration)
         targetBV:Destroy()
         
         -- Отключаем PlatformStand у жертвы (чтобы она могла умереть от падения)
@@ -426,7 +427,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = " MM2 v10.0 - SPIN FLING"
+Title.Text = "⚡ MM2 v10.1 - SPIN FLING"
 Title.TextColor3 = Color3.fromRGB(0, 220, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -640,7 +641,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 print("========================================")
-print("✅ MM2 Script v10.0 Loaded!")
+print("✅ MM2 Script v10.1 Loaded!")
 print("🌀 SPIN FLING SYSTEM READY")
 print(" ESP | Fling | Movement")
 print("========================================")
