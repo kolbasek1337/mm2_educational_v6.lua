@@ -1,9 +1,10 @@
 -- ============================================
--- MM2 SCRIPT v8.0 - WORKING VERSION
+-- MM2 SCRIPT v9.0 - TELEPORT FLING SYSTEM
+-- Механика: Телепорт вверх → Захват цели → Отбрасывание → Возврат
 -- ============================================
 
 print("========================================")
-print("⚡ MM2 Script v8.0 Loading...")
+print("⚡ MM2 Script v9.0 - TELEPORT FLING")
 print("========================================")
 
 local Players = game:GetService("Players")
@@ -24,8 +25,10 @@ local Config = {
         UpdateRate = 0.1
     },
     Fling = {
-        Power = 80,          -- Скорость подброса
-        Duration = 0.2       -- Длительность
+        LaunchHeight = 100,      -- Высота телепорта (studs)
+        ThrowPower = 5000,       -- Сила отбрасывания
+        ThrowDistance = 200,     -- Дистанция отбрасывания
+        Duration = 0.3           -- Длительность импульса
     },
     GunESP = {
         Enabled = false
@@ -37,7 +40,7 @@ local Config = {
 }
 
 -- ============================================
--- [ESP SYSTEM] - РАБОЧИЙ
+-- [ESP SYSTEM]
 -- ============================================
 local ESPObjects = {}
 local GunHighlights = {}
@@ -178,12 +181,16 @@ local function CheckDroppedGuns()
 end
 
 -- ============================================
--- [FLING SYSTEM] - ПРОСТОЙ И РАБОЧИЙ
+-- [TELEPORT FLING SYSTEM]
+-- Механика: Телепорт вверх → Захват цели → Отбрасывание → Возврат
 -- ============================================
 local FlingActive = false
 
-local function SimpleFling(targetPlayer)
-    if FlingActive then warn("[Fling] Already active!") return false end
+local function TeleportFling(targetPlayer)
+    if FlingActive then 
+        warn("[Fling] Already active!")
+        return false 
+    end
     
     local myChar = LocalPlayer.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
@@ -191,65 +198,118 @@ local function SimpleFling(targetPlayer)
     
     local targetChar = targetPlayer.Character
     local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+    local targetHum = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
     
-    if not myHRP or not myHum or not targetHRP then 
+    if not myHRP or not myHum or not targetHRP or not targetHum then 
         warn("[Fling] Missing parts!")
         return false 
     end
     
-    FlingActive = true
-    print("[Fling] Targeting: " .. targetPlayer.Name)
-    
-    -- Сохраняем позицию
-    local savedCFrame = myHRP.CFrame
-    
-    -- Отключаем коллизии
-    for _, part in ipairs(myChar:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
+    if targetHum.Health <= 0 then
+        warn("[Fling] Target is dead!")
+        return false
     end
     
-    -- PlatformStand
+    FlingActive = true
+    print("[Fling] ========================================")
+    print("[Fling] TARGET: " .. targetPlayer.Name)
+    print("[Fling] ========================================")
+    
+    -- ФАЗА 1: Сохраняем исходную позицию
+    local originalPosition = myHRP.CFrame
+    print("[Fling] Phase 1: Saved position at " .. tostring(originalPosition.Position))
+    
+    -- ФАЗА 2: Отключаем коллизии у себя
+    print("[Fling] Phase 2: Disabling collisions...")
+    local myParts = {}
+    for _, part in ipairs(myChar:GetDescendants()) do
+        if part:IsA("BasePart") then
+            myParts[part] = part.CanCollide
+            part.CanCollide = false
+        end
+    end
+    
+    -- ФАЗА 3: Телепорт ВВЕРХ
+    print("[Fling] Phase 3: Teleporting UP to height " .. Config.Fling.LaunchHeight)
+    myHRP.CFrame = originalPosition + Vector3.new(0, Config.Fling.LaunchHeight, 0)
     myHum.PlatformStand = true
+    task.wait(0.1)
     
-    -- Телепорт к цели
-    myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -0.5)
-    task.wait(0.03)
+    -- ФАЗА 4: Телепорт ЦЕЛИ к себе (рядом)
+    print("[Fling] Phase 4: Teleporting target to me...")
+    targetHRP.CFrame = myHRP.CFrame * CFrame.new(0, 0, -2)
+    targetHum.PlatformStand = true
+    task.wait(0.05)
     
-    -- BodyVelocity на СЕБЯ
+    -- ФАЗА 5: Создаём Weld между мной и целью
+    print("[Fling] Phase 5: Creating Weld constraint...")
+    local weld = Instance.new("Weld")
+    weld.Part0 = myHRP
+    weld.Part1 = targetHRP
+    weld.C0 = CFrame.new(0, 0, 0)
+    weld.C1 = CFrame.new(0, 0, 2)  -- Смещение цели
+    weld.Parent = myHRP
+    
+    -- ФАЗА 6: Создаём BodyVelocity на СЕБЯ с огромной силой
+    print("[Fling] Phase 6: Applying launch velocity...")
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bv.Velocity = Vector3.new(0, Config.Fling.Power, 0)
+    bv.P = 125000
+    
+    -- Вектор отбрасывания (вперёд + вверх)
+    local launchDirection = myHRP.CFrame.LookVector
+    local launchVelocity = (launchDirection * Config.Fling.ThrowPower) + Vector3.new(0, Config.Fling.ThrowPower * 0.5, 0)
+    
+    bv.Velocity = launchVelocity
     bv.Parent = myHRP
     
-    -- Держим позицию
-    for i = 1, math.floor(Config.Fling.Duration * 60) do
-        if not myHRP or not myHRP.Parent then break end
-        myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -0.5)
-        task.wait(1/60)
+    -- ФАЗА 7: Держим силу
+    print("[Fling] Phase 7: Maintaining force for " .. Config.Fling.Duration .. "s...")
+    local startTime = tick()
+    while tick() - startTime < Config.Fling.Duration do
+        if not myHRP or not myHRP.Parent or not targetHRP or not targetHRP.Parent then
+            break
+        end
+        bv.Velocity = launchVelocity
+        task.wait()
     end
     
-    -- Очистка
+    -- ФАЗА 8: Очистка
+    print("[Fling] Phase 8: Cleanup...")
+    weld:Destroy()
     bv:Destroy()
-    myHRP.CFrame = savedCFrame
+    
+    -- Сбрасываем скорости
     myHRP.AssemblyLinearVelocity = Vector3.zero
     myHRP.AssemblyAngularVelocity = Vector3.zero
+    targetHRP.AssemblyLinearVelocity = Vector3.zero
+    targetHRP.AssemblyAngularVelocity = Vector3.zero
     
-    task.wait(0.05)
+    -- ФАЗА 9: ВОЗВРАТ НА ИСХОДНУЮ ПОЗИЦИЮ
+    print("[Fling] Phase 9: Returning to original position...")
+    myHRP.CFrame = originalPosition
     myHum.PlatformStand = false
     myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
     Camera.CameraSubject = myHum
+    Camera.CameraType = Enum.CameraType.Custom
     
-    -- Восстанавливаем коллизии
-    for _, part in ipairs(myChar:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = true end
+    -- Возвращаем коллизии
+    for part, original in pairs(myParts) do
+        if part and part.Parent then
+            part.CanCollide = original
+        end
     end
     
+    -- Финальный сброс
     task.wait(0.1)
-    myHrp.AssemblyLinearVelocity = Vector3.zero
+    myHRP.AssemblyLinearVelocity = Vector3.zero
+    myHRP.AssemblyAngularVelocity = Vector3.zero
     myHum.PlatformStand = false
     
     FlingActive = false
-    print("[Fling] Done!")
+    print("[Fling] ========================================")
+    print("[Fling] COMPLETE! Target launched!")
+    print("[Fling] ========================================")
     return true
 end
 
@@ -263,7 +323,7 @@ local function GetNearestPlayer()
             local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
             if th and h and h.Health > 0 then
                 local d = (hrp.Position - th.Position).Magnitude
-                if d < 50 and d < dist then nearest, dist = p, d end
+                if d < 100 and d < dist then nearest, dist = p, d end
             end
         end
     end
@@ -280,7 +340,7 @@ local function GetPlayerByRole(roleName)
 end
 
 -- ============================================
--- [GUI] - КРАСИВЫЙ С ВКЛАДКАМИ
+-- [GUI]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MM2_GUI"
@@ -321,7 +381,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ MM2 SCRIPT v8.0"
+Title.Text = "⚡ MM2 v9.0 - TELEPORT FLING"
 Title.TextColor3 = Color3.fromRGB(0, 220, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -476,19 +536,19 @@ CreateToggle(espContent, espLayout, "XRay", false, function(v) Config.ESP.XRay =
 CreateToggle(espContent, espLayout, "Gun Highlight", false, function(v) Config.GunESP.Enabled = v end)
 
 -- Fling
-CreateButton(flingContent, flingLayout, "🚀 Fling Nearest", function()
+CreateButton(flingContent, flingLayout, "🚀 Teleport Fling Nearest", function()
     local t = GetNearestPlayer()
-    if t then task.spawn(function() SimpleFling(t) end) 
+    if t then task.spawn(function() TeleportFling(t) end) 
     else warn("No target!") end
 end)
-CreateButton(flingContent, flingLayout, "🔪 Fling Murderer", function()
+CreateButton(flingContent, flingLayout, "🔪 Teleport Fling Murderer", function()
     local t = GetPlayerByRole("Murderer")
-    if t then task.spawn(function() SimpleFling(t) end) 
+    if t then task.spawn(function() TeleportFling(t) end) 
     else warn("Murderer not found!") end
 end)
-CreateButton(flingContent, flingLayout, "🔫 Fling Sheriff", function()
+CreateButton(flingContent, flingLayout, " Teleport Fling Sheriff", function()
     local t = GetPlayerByRole("Sheriff")
-    if t then task.spawn(function() SimpleFling(t) end) 
+    if t then task.spawn(function() TeleportFling(t) end) 
     else warn("Sheriff not found!") end
 end)
 
@@ -535,6 +595,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 print("========================================")
-print("✅ MM2 Script v8.0 Loaded!")
+print("✅ MM2 Script v9.0 Loaded!")
+print("🚀 TELEPORT FLING SYSTEM READY")
 print(" ESP | Fling | Movement")
 print("========================================")
