@@ -1,11 +1,13 @@
 -- ============================================
--- MM2 EDUCATIONAL SCRIPT v6.0
--- Для GitHub: kolbasek1337/my-mm2-script
--- ЦЕЛЬ: Демонстрация механик Roblox и защита от детекта
+-- MM2 EDUCATIONAL SCRIPT v7.0 - ULTIMATE FLING
+-- Для GitHub: kolbasek1337/mm2_educational_v6.lua
+-- ФИЗИКА: LinearVelocity + AssemblyLinearVelocity + Weld
 -- ============================================
 
-print(" MM2 Educational Script v6.0 Loading...")
-print("📚 Изучаем внутреннюю механику Roblox")
+print("========================================")
+print("⚡ MM2 Educational Script v7.0")
+print(" ULTIMATE FLING SYSTEM")
+print("========================================")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -13,26 +15,42 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ============================================
--- [CONFIG] Настройки с анти-детект лимитами
+-- [CONFIG] Настройки
 -- ============================================
 local Config = {
     ESP = {
         Enabled = false,
         ShowNames = false,
         ShowRoles = false,
-        XRay = false,           -- AlwaysOnTop для BillboardGui
-        MaxDistance = 400,      -- Не показывать слишком далеких (оптимизация)
-        UpdateRate = 0.1        -- Обновлять ESP каждые 0.1 сек (не каждый кадр!)
+        XRay = false,
+        MaxDistance = 400,
+        UpdateRate = 0.1
     },
     Fling = {
-        Power = 30000,          -- Умеренная сила (50000+容易被检测到)
-        Duration = 0.15,        -- Короткий импульс (меньше = безопаснее)
-        ReturnDelay = 0.05      -- Быстрый возврат на место
+        -- Режимы: "Teleport", "Weld", "Velocity"
+        Mode = "Teleport",
+        
+        -- Сила импульса
+        Power = 50000,
+        UpwardForce = 15000,
+        
+        -- Длительность (сек)
+        Duration = 0.2,
+        ReturnDelay = 0.05,
+        
+        -- Дистанция активации
+        MaxDistance = 6,
+        
+        -- Сетка владения (Network Ownership)
+        UseNetworkOwnership = true,
+    },
+    GunESP = {
+        Enabled = false
     },
     Autofarm = {
         Enabled = false,
-        Speed = 30,             -- Скорость движения (не телепорт!)
-        CheckDistance = 7       -- Макс. дистанция сбора (имитация легального)
+        Speed = 30,
+        CheckDistance = 7
     },
     Player = {
         WalkSpeed = 16,
@@ -41,37 +59,28 @@ local Config = {
 }
 
 -- ============================================
--- [ESP SYSTEM] Клиентская визуализация
--- ============================================
--- ТЕОРИЯ: ESP работает только на клиенте. 
--- Сервер не может запретить Highlight/BillboardGui.
--- Уязвимость MM2: Роли хранятся в Backpack/Character.
+-- [ESP SYSTEM]
 -- ============================================
 
 local ESPObjects = {}
 local GunHighlights = {}
 
 local function GetRole(player)
-    -- Читаем роль так, как это делает игра
     if not player then return "Innocent" end
     
-    -- Способ 1: StringValue в игроке
     local roleObj = player:FindFirstChild("Role")
     if roleObj and roleObj:IsA("StringValue") then return roleObj.Value end
     
-    -- Способ 2: StringValue в персонаже
     if player.Character then
         local charRole = player.Character:FindFirstChild("Role")
         if charRole and charRole:IsA("StringValue") then return charRole.Value end
     end
     
-    -- Способ 3: Оружие в рюкзаке (MM2 хранит роль здесь!)
     if player.Backpack then
         if player.Backpack:FindFirstChild("Knife") then return "Murderer" end
         if player.Backpack:FindFirstChild("Gun") then return "Sheriff" end
     end
     
-    -- Способ 4: Оружие в руках
     if player.Character then
         if player.Character:FindFirstChild("Knife") then return "Murderer" end
         if player.Character:FindFirstChild("Gun") then return "Sheriff" end
@@ -94,12 +103,11 @@ local function CreateESP(player)
     if not player or player == LocalPlayer then return end
     if ESPObjects[player] then return end
 
-    -- BillboardGui: Видимый через стены благодаря AlwaysOnTop
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_" .. player.Name
     billboard.Size = UDim2.new(0, 250, 0, 80)
     billboard.StudsOffset = Vector3.new(0, 4, 0)
-    billboard.AlwaysOnTop = false -- Будет меняться динамически
+    billboard.AlwaysOnTop = false
     billboard.ResetOnSpawn = false
     billboard.Parent = game:GetService("CoreGui")
 
@@ -124,7 +132,6 @@ local function CreateESP(player)
     roleLabel.Text = "[...]"
     roleLabel.Parent = billboard
 
-    -- Highlight: Подсветка модели
     local highlight = Instance.new("Highlight")
     highlight.FillTransparency = 0.7
     highlight.OutlineTransparency = 0
@@ -153,7 +160,6 @@ local function UpdateESP(player)
         return
     end
 
-    -- Оптимизация: обновляем роль не каждый кадр, а раз в 0.1 сек
     local now = tick()
     if now - data.LastUpdate > Config.ESP.UpdateRate then
         local role = GetRole(player)
@@ -165,17 +171,13 @@ local function UpdateESP(player)
         data.LastUpdate = now
     end
 
-    -- XRay режим: AlwaysOnTop = true делает видимым сквозь стены
     data.Billboard.AlwaysOnTop = Config.ESP.XRay
     data.Billboard.Adornee = hrp
     data.Highlight.Parent = character
 end
 
--- ============================================
--- [GUN ESP] Подсветка выпавшего оружия
--- ============================================
 local function CheckDroppedGuns()
-    if not Config.GunESP and not Config.GunESP.Enabled then
+    if not Config.GunESP.Enabled then
         for _, h in pairs(GunHighlights) do pcall(function() h:Destroy() end) end
         GunHighlights = {}
         return
@@ -205,17 +207,119 @@ local function CheckDroppedGuns()
 end
 
 -- ============================================
--- [FLING SYSTEM] Безопасный импульсный флинг
--- ============================================
--- ТЕОРИЯ: Используем Network Ownership + BodyVelocity.
--- АНТИ-ДЕТЕКТ: Короткая длительность, умеренная сила, 
--- полный сброс состояния после.
+-- [ULTIMATE FLING SYSTEM v2.0]
+-- Три режима: Teleport, Weld, Velocity
 -- ============================================
 
-local FlingInProgress = false
+local FlingActive = false
 
-local function SafeFling(targetPlayer)
-    if FlingInProgress then return false end
+-- ============================================
+-- РЕЖИМ 1: TELEPORT FLING
+-- Механика: Телепорт → Импульс жертве → Возврат
+-- ============================================
+local function TeleportFling(targetPlayer)
+    print("[Fling] Mode: TELEPORT")
+    
+    local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local targetHum = targetPlayer.Character and targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    
+    if not targetHrp or not targetHum or not myHrp or not myHum then 
+        warn("[Fling] Missing parts!")
+        return false 
+    end
+    if targetHum.Health <= 0 or myHum.Health <= 0 then 
+        warn("[Fling] Dead target!")
+        return false 
+    end
+    
+    FlingActive = true
+    
+    -- ФАЗА 1: Сохранение состояния
+    local savedCFrame = myHrp.CFrame
+    local savedVelocity = myHrp.AssemblyLinearVelocity
+    
+    -- ФАЗА 2: Отключение коллизий
+    local myParts = {}
+    for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            myParts[part] = part.CanCollide
+            part.CanCollide = false
+        end
+    end
+    
+    -- ФАЗА 3: Телепорт к цели (внутрь хитбокса)
+    print("[Fling] Teleporting to target...")
+    myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, -0.5)
+    task.wait(0.03)
+    
+    -- ФАЗА 4: Импульс ЦЕЛИ (не себе!)
+    print("[Fling] Applying impulse to target...")
+    
+    -- PlatformStand у жертвы (защита от анимаций)
+    targetHum.PlatformStand = true
+    
+    -- LinearVelocity на цели
+    local lv = Instance.new("LinearVelocity")
+    lv.Name = "FlingVelocity"
+    lv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    lv.P = 125000
+    
+    -- Вектор направления: ВВЕРХ + немного вперёд
+    local direction = (targetHrp.Position - myHrp.Position).Unit
+    local velocityVector = (direction * Config.Fling.Power) + Vector3.new(0, Config.Fling.UpwardForce, 0)
+    
+    lv.VectorVelocity = velocityVector
+    lv.Attachment0 = targetHrp.RootAttachment or targetHrp:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", targetHrp)
+    lv.Parent = targetHrp
+    
+    -- AssemblyLinearVelocity (мгновенный импульс)
+    targetHrp.AssemblyLinearVelocity = velocityVector
+    
+    -- ФАЗА 5: Удержание силы
+    task.wait(Config.Fling.Duration)
+    
+    -- ФАЗА 6: МГНОВЕННЫЙ ВОЗВРАТ
+    print("[Fling] Returning to position...")
+    myHrp.CFrame = savedCFrame
+    myHrp.AssemblyLinearVelocity = savedVelocity
+    myHrp.AssemblyAngularVelocity = Vector3.zero
+    
+    -- ФАЗА 7: Очистка
+    pcall(function() lv:Destroy() end)
+    pcall(function() targetHum.PlatformStand = false end)
+    
+    -- Восстановление коллизий
+    for part, original in pairs(myParts) do
+        if part and part.Parent then
+            part.CanCollide = original
+        end
+    end
+    
+    -- ФАЗА 8: Полный сброс состояния
+    task.wait(Config.Fling.ReturnDelay)
+    myHum.PlatformStand = false
+    myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    Camera.CameraSubject = myHum
+    Camera.CameraType = Enum.CameraType.Custom
+    
+    task.wait(0.1)
+    myHrp.AssemblyLinearVelocity = Vector3.zero
+    myHrp.AssemblyAngularVelocity = Vector3.zero
+    myHum.PlatformStand = false
+    
+    FlingActive = false
+    print("[Fling] TELEPORT mode complete!")
+    return true
+end
+
+-- ============================================
+-- РЕЖИМ 2: WELD FLING
+-- Механика: Приваривание → Полёт вместе → Отваривание
+-- ============================================
+local function WeldFling(targetPlayer)
+    print("[Fling] Mode: WELD")
     
     local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
     local targetHum = targetPlayer.Character and targetPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -225,61 +329,141 @@ local function SafeFling(targetPlayer)
     if not targetHrp or not targetHum or not myHrp or not myHum then return false end
     if targetHum.Health <= 0 or myHum.Health <= 0 then return false end
     
-    FlingInProgress = true
-    print("[Fling] Targeting: " .. targetPlayer.Name)
+    FlingActive = true
     
-    -- Сохраняем свою позицию
+    -- Сохранение позиции
     local savedCFrame = myHrp.CFrame
     
-    -- Отключаем свои коллизии (проходим сквозь цель)
+    -- Отключение коллизий
     for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-        if part:IsA("BasePart") then pcall(function() part.CanCollide = false end) end
+        if part:IsA("BasePart") then part.CanCollide = false end
     end
     
-    -- Телепорт к цели
+    -- Teleport к цели
     myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, -1)
-    task.wait(0.03) -- Минимальная синхронизация с сервером
+    task.wait(0.02)
     
-    -- Создаем BodyVelocity НА ЦЕЛИ (не на себе!)
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bv.P = 125000
-    bv.Velocity = Vector3.new(0, Config.Fling.Power, 0)
-    bv.Parent = targetHrp
+    -- Создание Weld (приваривание)
+    local weld = Instance.new("Weld")
+    weld.Part0 = myHrp
+    weld.Part1 = targetHrp
+    weld.C0 = CFrame.new(0, 0, 0)
+    weld.C1 = CFrame.new(0, 0, 0)
+    weld.Parent = myHrp
     
-    -- Применяем силу короткое время (0.15 сек)
+    -- PlatformStand у обоих
+    myHum.PlatformStand = true
+    targetHum.PlatformStand = true
+    
+    -- LinearVelocity на СЕБЯ (тянем жертву за собой)
+    local lv = Instance.new("LinearVelocity")
+    lv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    lv.VectorVelocity = Vector3.new(0, Config.Fling.Power, 0)
+    lv.Attachment0 = myHrp.RootAttachment or myHrp:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", myHrp)
+    lv.Parent = myHrp
+    
+    -- Удержание
     task.wait(Config.Fling.Duration)
     
-    -- Удаляем силу
-    pcall(function() bv:Destroy() end)
+    -- Очистка
+    weld:Destroy()
+    pcall(function() lv:Destroy() end)
     
-    -- МГНОВЕННЫЙ ВОЗВРАТ НА МЕСТО
     myHrp.CFrame = savedCFrame
     myHrp.AssemblyLinearVelocity = Vector3.zero
     myHrp.AssemblyAngularVelocity = Vector3.zero
     
-    -- ПОЛНЫЙ СБРОС СОСТОЯНИЯ (Анти-баг ходьбы)
     task.wait(Config.Fling.ReturnDelay)
     myHum.PlatformStand = false
+    targetHum.PlatformStand = false
     myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
     Camera.CameraSubject = myHum
-    Camera.CameraType = Enum.CameraType.Custom
     
-    -- Восстанавливаем коллизии
     for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-        if part:IsA("BasePart") then pcall(function() part.CanCollide = true end) end
+        if part:IsA("BasePart") then part.CanCollide = true end
     end
     
-    -- Финальный сброс
     task.wait(0.1)
     myHrp.AssemblyLinearVelocity = Vector3.zero
-    myHrp.AssemblyAngularVelocity = Vector3.zero
     myHum.PlatformStand = false
     
-    FlingInProgress = false
-    print("[Fling] Done! State reset complete.")
+    FlingActive = false
+    print("[Fling] WELD mode complete!")
     return true
 end
+
+-- ============================================
+-- РЕЖИМ 3: VELOCITY FLING (ПРЯМАЯ УСТАНОВКА)
+-- Механика: Прямая установка AssemblyLinearVelocity
+-- ============================================
+local function VelocityFling(targetPlayer)
+    print("[Fling] Mode: VELOCITY")
+    
+    local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local targetHum = targetPlayer.Character and targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    
+    if not targetHrp or not targetHum then return false end
+    if targetHum.Health <= 0 then return false end
+    
+    FlingActive = true
+    
+    -- PlatformStand
+    targetHum.PlatformStand = true
+    
+    -- Прямая установка скорости (самый мощный метод)
+    local velocityVector = Vector3.new(0, Config.Fling.Power * 1.5, 0)  -- x1.5 множитель
+    targetHrp.AssemblyLinearVelocity = velocityVector
+    targetHrp.AssemblyAngularVelocity = Vector3.new(0, 50, 0)  -- Добавляем вращение
+    
+    -- Удержание через цикл (обновляем каждый кадр)
+    local startTime = tick()
+    while tick() - startTime < Config.Fling.Duration do
+        if not targetHrp or not targetHrp.Parent then break end
+        targetHrp.AssemblyLinearVelocity = velocityVector
+        task.wait()
+    end
+    
+    -- Сброс
+    targetHrp.AssemblyLinearVelocity = Vector3.zero
+    targetHrp.AssemblyAngularVelocity = Vector3.zero
+    
+    task.wait(0.1)
+    targetHum.PlatformStand = false
+    
+    FlingActive = false
+    print("[Fling] VELOCITY mode complete!")
+    return true
+end
+
+-- ============================================
+-- УНИВЕРСАЛЬНАЯ ФУНКЦИЯ FLING
+-- ============================================
+local function ExecuteFling(targetPlayer)
+    if FlingActive then
+        warn("[Fling] Already active!")
+        return false
+    end
+    
+    local mode = Config.Fling.Mode
+    local success = false
+    
+    if mode == "Teleport" then
+        success = TeleportFling(targetPlayer)
+    elseif mode == "Weld" then
+        success = WeldFling(targetPlayer)
+    elseif mode == "Velocity" then
+        success = VelocityFling(targetPlayer)
+    else
+        warn("[Fling] Unknown mode: " .. tostring(mode))
+        success = TeleportFling(targetPlayer)  -- Fallback
+    end
+    
+    return success
+end
+
+-- ============================================
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+-- ============================================
 
 local function GetNearestPlayer()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -291,7 +475,9 @@ local function GetNearestPlayer()
             local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
             if th and h and h.Health > 0 then
                 local d = (hrp.Position - th.Position).Magnitude
-                if d < dist then nearest, dist = p, d end
+                if d < Config.Fling.MaxDistance and d < dist then 
+                    nearest, dist = p, d 
+                end
             end
         end
     end
@@ -308,10 +494,7 @@ local function GetPlayerByRole(roleName)
 end
 
 -- ============================================
--- [AUTOFARM COINS] Легитимная симуляция сбора
--- ============================================
--- ТЕОРИЯ: Используем плавное движение вместо телепорта.
--- Проверяем Magnitude перед сбором (как сервер).
+-- AUTOFARM
 -- ============================================
 
 local function FindNearestCoin()
@@ -319,7 +502,6 @@ local function FindNearestCoin()
     if not hrp then return nil end
     
     local nearest, dist = nil, math.huge
-    -- Ищем монеты в workspace (адаптируй под структуру MM2)
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin" or obj.Name:find("Coin")) then
             local d = (hrp.Position - obj.Position).Magnitude
@@ -335,28 +517,25 @@ task.spawn(function()
         task.wait(0.1)
         if Config.Autofarm.Enabled and not farmRunning then
             local coin, dist = FindNearestCoin()
-            if coin and dist <= 100 then -- Не фармить слишком далеко
+            if coin and dist <= 100 then
                 farmRunning = true
-                -- ПЛАВНОЕ ДВИЖЕНИЕ (имитация ходьбы)
                 local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local startPos = hrp.Position
-                local targetPos = coin.Position
-                local steps = math.ceil(dist / Config.Autofarm.Speed)
-                
-                for i = 1, steps do
-                    if not Config.Autofarm.Enabled or not hrp.Parent then break end
-                    local t = i / steps
-                    hrp.CFrame = CFrame.new(startPos:Lerp(targetPos, t))
-                    task.wait(0.016) -- 60 FPS движение
+                if hrp then
+                    local startPos = hrp.Position
+                    local targetPos = coin.Position
+                    local steps = math.ceil(dist / Config.Autofarm.Speed)
+                    
+                    for i = 1, steps do
+                        if not Config.Autofarm.Enabled or not hrp.Parent then break end
+                        local t = i / steps
+                        hrp.CFrame = CFrame.new(startPos:Lerp(targetPos, t))
+                        task.wait(0.016)
+                    end
+                    
+                    if hrp and (hrp.Position - coin.Position).Magnitude <= Config.Autofarm.CheckDistance then
+                        print("[Autofarm] Collected")
+                    end
                 end
-                
-                -- Проверка дистанции перед "сбором" (анти-детект)
-                if hrp and (hrp.Position - coin.Position).Magnitude <= Config.Autofarm.CheckDistance then
-                    print("[Autofarm] Collected coin at safe distance")
-                else
-                    warn("[Autofarm] Too far, skipped collection")
-                end
-                
                 farmRunning = false
             end
         end
@@ -364,7 +543,7 @@ task.spawn(function()
 end)
 
 -- ============================================
--- [GUI] Вкладки: ESP | Fling | Movement
+-- GUI
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -383,7 +562,7 @@ btnCorner.CornerRadius = UDim.new(0, 14)
 btnCorner.Parent = ToggleBtn
 
 local Menu = Instance.new("Frame")
-Menu.Size = UDim2.new(0, 450, 0, 400)
+Menu.Size = UDim2.new(0, 450, 0, 450)  -- Увеличили высоту
 Menu.Position = UDim2.new(0.05, 0, 0.1, 0)
 Menu.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 Menu.BorderSizePixel = 0
@@ -406,7 +585,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ MM2 EDUCATIONAL v6.0"
+Title.Text = "⚡ MM2 v7.0 - ULTIMATE FLING"
 Title.TextColor3 = Color3.fromRGB(0, 220, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -548,6 +727,59 @@ local function CreateButton(parent, layout, text, callback)
     parent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
 end
 
+local function CreateDropdown(parent, layout, text, options, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 30, 45)
+    frame.BorderSizePixel = 0
+    frame.LayoutOrder = #parent:GetChildren()
+    frame.Parent = parent
+    local fc = Instance.new("UICorner")
+    fc.CornerRadius = UDim.new(0, 8)
+    fc.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(240, 240, 255)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local dropdownBtn = Instance.new("TextButton")
+    dropdownBtn.Size = UDim2.new(0.4, 0, 1, 0)
+    dropdownBtn.Position = UDim2.new(0.55, 0, 0, 0)
+    dropdownBtn.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
+    dropdownBtn.Text = options[default] or options[1]
+    dropdownBtn.TextColor3 = Color3.fromRGB(0, 220, 255)
+    dropdownBtn.Font = Enum.Font.GothamBold
+    dropdownBtn.TextSize = 12
+    dropdownBtn.BorderSizePixel = 0
+    dropdownBtn.Parent = frame
+    local dc = Instance.new("UICorner")
+    dc.CornerRadius = UDim.new(0, 6)
+    dc.Parent = dropdownBtn
+
+    dropdownBtn.MouseButton1Click:Connect(function()
+        local currentIndex = 1
+        for i, opt in ipairs(options) do
+            if opt == dropdownBtn.Text then
+                currentIndex = i
+                break
+            end
+        end
+        local newIndex = (currentIndex % #options) + 1
+        dropdownBtn.Text = options[newIndex]
+        if callback then callback(options[newIndex]) end
+    end)
+    
+    task.wait()
+    parent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+end
+
 -- Создание вкладок
 local espContent, espLayout = CreateTab("ESP", 1)
 local flingContent, flingLayout = CreateTab("Fling", 2)
@@ -558,20 +790,39 @@ CreateToggle(espContent, espLayout, "ESP Enabled", false, function(v) Config.ESP
 CreateToggle(espContent, espLayout, "Show Names", false, function(v) Config.ESP.ShowNames = v end)
 CreateToggle(espContent, espLayout, "Show Roles", false, function(v) Config.ESP.ShowRoles = v end)
 CreateToggle(espContent, espLayout, "XRay (Through Walls)", false, function(v) Config.ESP.XRay = v end)
-CreateToggle(espContent, espLayout, "Gun Drop Highlight", false, function(v) Config.GunESP = {Enabled = v} end)
+CreateToggle(espContent, espLayout, "Gun Drop Highlight", false, function(v) Config.GunESP.Enabled = v end)
 
 -- Fling элементы
-CreateButton(flingContent, flingLayout, "🚀 Fling Nearest (Safe)", function()
-    local t = GetNearestPlayer()
-    if t then task.spawn(function() SafeFling(t) end) end
+CreateDropdown(flingContent, flingLayout, "Fling Mode", {"Teleport", "Weld", "Velocity"}, 1, function(mode)
+    Config.Fling.Mode = mode
+    print("[Config] Fling mode set to: " .. mode)
 end)
+
+CreateButton(flingContent, flingLayout, "🚀 Fling Nearest", function()
+    local t = GetNearestPlayer()
+    if t then 
+        task.spawn(function() ExecuteFling(t) end) 
+    else
+        warn("No target in range!")
+    end
+end)
+
 CreateButton(flingContent, flingLayout, "🔪 Fling Murderer", function()
     local t = GetPlayerByRole("Murderer")
-    if t then task.spawn(function() SafeFling(t) end) end
+    if t then 
+        task.spawn(function() ExecuteFling(t) end) 
+    else
+        warn("Murderer not found!")
+    end
 end)
-CreateButton(flingContent, flingLayout, "🔫 Fling Sheriff", function()
+
+CreateButton(flingContent, flingLayout, " Fling Sheriff", function()
     local t = GetPlayerByRole("Sheriff")
-    if t then task.spawn(function() SafeFling(t) end) end
+    if t then 
+        task.spawn(function() ExecuteFling(t) end) 
+    else
+        warn("Sheriff not found!")
+    end
 end)
 
 -- Movement элементы
@@ -589,7 +840,7 @@ end
 ToggleBtn.MouseButton1Click:Connect(function() Menu.Visible = not Menu.Visible end)
 
 -- ============================================
--- [MAIN LOOP] Главный цикл обновления
+-- [MAIN LOOP]
 -- ============================================
 
 local function OnPlayerAdded(player)
@@ -603,28 +854,24 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 
 RunService.Heartbeat:Connect(function()
-    -- ESP обновление
     for player, _ in pairs(ESPObjects) do
         if player and player.Parent then UpdateESP(player) end
     end
     
-    -- Gun ESP
     CheckDroppedGuns()
     
-    -- Noclip
     if Config.Player.Noclip and LocalPlayer.Character then
         for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
     
-    -- WalkSpeed
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then hum.WalkSpeed = Config.Player.WalkSpeed end
 end)
 
 print("========================================")
-print("✅ MM2 Educational Script v6.0 Loaded!")
-print("📚 Tabs: ESP | Fling | Movement")
-print("🛡️  Anti-Detect: Safe Fling + Smooth Autofarm")
+print("✅ MM2 Script v7.0 Loaded!")
+print("🔥 FLING MODES: Teleport | Weld | Velocity")
+print("📊 Tabs: ESP | Fling | Movement")
 print("========================================")
