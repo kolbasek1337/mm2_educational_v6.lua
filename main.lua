@@ -25,10 +25,10 @@ local Config = {
         UpdateRate = 0.1
     },
     Fling = {
-        LaunchHeight = 100,      -- Высота телепорта (studs)
-        ThrowPower = 5000,       -- Сила отбрасывания
+        LaunchHeight = 200,      -- Высота телепорта (studs)
+        ThrowPower = 500000,       -- Сила отбрасывания
         ThrowDistance = 200,     -- Дистанция отбрасывания
-        Duration = 0.3           -- Длительность импульса
+        Duration = 2.00           -- Длительность импульса
     },
     GunESP = {
         Enabled = false
@@ -254,7 +254,7 @@ local function TeleportFling(targetPlayer)
     print("[Fling] Phase 6: Applying launch velocity...")
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bv.P = 125000
+    bv.P = 125000000
     
     -- Вектор отбрасывания (вперёд + вверх)
     local launchDirection = myHRP.CFrame.LookVector
