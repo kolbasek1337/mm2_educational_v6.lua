@@ -1,10 +1,10 @@
 -- ============================================
--- MM2 SCRIPT v9.0 - TELEPORT FLING SYSTEM
--- Механика: Телепорт вверх → Захват цели → Отбрасывание → Возврат
+-- MM2 SCRIPT v10.0 - SPIN FLING SYSTEM
+-- Механика: Телепорт вверх → Вращение → Захват → Отбрасывание → Возврат
 -- ============================================
 
 print("========================================")
-print("⚡ MM2 Script v9.0 - TELEPORT FLING")
+print("⚡ MM2 Script v10.0 - SPIN FLING")
 print("========================================")
 
 local Players = game:GetService("Players")
@@ -25,10 +25,10 @@ local Config = {
         UpdateRate = 0.1
     },
     Fling = {
-        LaunchHeight = 500000000,      -- Высота телепорта (studs)
-        ThrowPower = 5000000,       -- Сила отбрасывания
-        ThrowDistance = 5000000,     -- Дистанция отбрасывания
-        Duration = 2.51           -- Длительность импульса
+        LaunchHeight = 500,        -- Высота телепорта (очень высоко!)
+        SpinSpeed = 500000,        -- Скорость вращения (огромная!)
+        SpinDuration = 1.0,        -- Длительность вращения (1 секунда)
+        SpinAxis = "Y"             -- Ось вращения: "X", "Y", "Z" или "ALL"
     },
     GunESP = {
         Enabled = false
@@ -181,12 +181,12 @@ local function CheckDroppedGuns()
 end
 
 -- ============================================
--- [TELEPORT FLING SYSTEM]
--- Механика: Телепорт вверх → Захват цели → Отбрасывание → Возврат
+-- [SPIN FLING SYSTEM]
+-- Механика: Телепорт вверх → Вращение → Захват → Отбрасывание → Возврат
 -- ============================================
 local FlingActive = false
 
-local function TeleportFling(targetPlayer)
+local function SpinFling(targetPlayer)
     if FlingActive then 
         warn("[Fling] Already active!")
         return false 
@@ -217,7 +217,7 @@ local function TeleportFling(targetPlayer)
     
     -- ФАЗА 1: Сохраняем исходную позицию
     local originalPosition = myHRP.CFrame
-    print("[Fling] Phase 1: Saved position at " .. tostring(originalPosition.Position))
+    print("[Fling] Phase 1: Saved position")
     
     -- ФАЗА 2: Отключаем коллизии у себя
     print("[Fling] Phase 2: Disabling collisions...")
@@ -229,65 +229,82 @@ local function TeleportFling(targetPlayer)
         end
     end
     
-    -- ФАЗА 3: Телепорт ВВЕРХ
-    print("[Fling] Phase 3: Teleporting UP to height " .. Config.Fling.LaunchHeight)
+    -- ФАЗА 3: Телепорт ОЧЕНЬ ВЫСОКО В ВОЗДУХ
+    print("[Fling] Phase 3: Teleporting UP to " .. Config.Fling.LaunchHeight .. " studs...")
     myHRP.CFrame = originalPosition + Vector3.new(0, Config.Fling.LaunchHeight, 0)
     myHum.PlatformStand = true
+    
+    -- Сбрасываем скорости чтобы не падать сразу
+    myHRP.AssemblyLinearVelocity = Vector3.zero
+    myHRP.AssemblyAngularVelocity = Vector3.zero
     task.wait(0.1)
     
-    -- ФАЗА 4: Телепорт ЦЕЛИ к себе (рядом)
+    -- ФАЗА 4: Телепорт жертвы к себе
     print("[Fling] Phase 4: Teleporting target to me...")
     targetHRP.CFrame = myHRP.CFrame * CFrame.new(0, 0, -2)
     targetHum.PlatformStand = true
+    targetHRP.AssemblyLinearVelocity = Vector3.zero
+    targetHRP.AssemblyAngularVelocity = Vector3.zero
     task.wait(0.05)
     
-    -- ФАЗА 5: Создаём Weld между мной и целью
-    print("[Fling] Phase 5: Creating Weld constraint...")
-    local weld = Instance.new("Weld")
-    weld.Part0 = myHRP
-    weld.Part1 = targetHRP
-    weld.C0 = CFrame.new(0, 0, 0)
-    weld.C1 = CFrame.new(0, 0, 2)  -- Смещение цели
-    weld.Parent = myHRP
+    -- ФАЗА 5: Создаём BodyAngularVelocity для ЖЁСТКОГО ВРАЩЕНИЯ
+    print("[Fling] Phase 5: Starting SPIN...")
+    local bav = Instance.new("BodyAngularVelocity")
+    bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bav.P = 100000
     
-    -- ФАЗА 6: Создаём BodyVelocity на СЕБЯ с огромной силой
-    print("[Fling] Phase 6: Applying launch velocity...")
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bv.P = 125000000
+    -- Определяем ось вращения
+    local spinVector
+    if Config.Fling.SpinAxis == "X" then
+        spinVector = Vector3.new(Config.Fling.SpinSpeed, 0, 0)
+    elseif Config.Fling.SpinAxis == "Z" then
+        spinVector = Vector3.new(0, 0, Config.Fling.SpinSpeed)
+    elseif Config.Fling.SpinAxis == "ALL" then
+        spinVector = Vector3.new(Config.Fling.SpinSpeed, Config.Fling.SpinSpeed, Config.Fling.SpinSpeed)
+    else
+        spinVector = Vector3.new(0, Config.Fling.SpinSpeed, 0)  -- По умолчанию Y
+    end
     
-    -- Вектор отбрасывания (вперёд + вверх)
-    local launchDirection = myHRP.CFrame.LookVector
-    local launchVelocity = (launchDirection * Config.Fling.ThrowPower) + Vector3.new(0, Config.Fling.ThrowPower * 0.5, 0)
+    bav.AngularVelocity = spinVector
+    bav.Parent = myHRP
     
-    bv.Velocity = launchVelocity
-    bv.Parent = myHRP
-    
-    -- ФАЗА 7: Держим силу
-    print("[Fling] Phase 7: Maintaining force for " .. Config.Fling.Duration .. "s...")
+    -- ФАЗА 6: ВРАЩАЕМСЯ 1 СЕКУНДУ
+    print("[Fling] Phase 6: Spinning for " .. Config.Fling.SpinDuration .. "s...")
     local startTime = tick()
-    while tick() - startTime < Config.Fling.Duration do
-        if not myHRP or not myHRP.Parent or not targetHRP or not targetHRP.Parent then
-            break
+    while tick() - startTime < Config.Fling.SpinDuration do
+        if not myHRP or not myHRP.Parent then break end
+        
+        -- Держим жертву рядом с собой во время вращения
+        if targetHRP and targetHRP.Parent then
+            targetHRP.CFrame = myHRP.CFrame * CFrame.new(0, 0, -2)
         end
-        bv.Velocity = launchVelocity
+        
+        -- Обновляем скорость вращения каждый кадр
+        bav.AngularVelocity = spinVector
+        
         task.wait()
     end
     
-    -- ФАЗА 8: Очистка
-    print("[Fling] Phase 8: Cleanup...")
-    weld:Destroy()
-    bv:Destroy()
+    -- ФАЗА 7: ОСТАНОВКА ВРАЩЕНИЯ
+    print("[Fling] Phase 7: Stopping spin...")
+    bav:Destroy()
     
-    -- Сбрасываем скорости
+    -- Сбрасываем все скорости
     myHRP.AssemblyLinearVelocity = Vector3.zero
     myHRP.AssemblyAngularVelocity = Vector3.zero
-    targetHRP.AssemblyLinearVelocity = Vector3.zero
-    targetHRP.AssemblyAngularVelocity = Vector3.zero
+    if targetHRP and targetHRP.Parent then
+        targetHRP.AssemblyLinearVelocity = Vector3.zero
+        targetHRP.AssemblyAngularVelocity = Vector3.zero
+    end
     
-    -- ФАЗА 9: ВОЗВРАТ НА ИСХОДНУЮ ПОЗИЦИЮ
-    print("[Fling] Phase 9: Returning to original position...")
+    task.wait(0.1)
+    
+    -- ФАЗА 8: ВОЗВРАТ НА ИСХОДНУЮ ПОЗИЦИЮ
+    print("[Fling] Phase 8: Returning to original position...")
     myHRP.CFrame = originalPosition
+    myHRP.AssemblyLinearVelocity = Vector3.zero
+    myHRP.AssemblyAngularVelocity = Vector3.zero
+    
     myHum.PlatformStand = false
     myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
     Camera.CameraSubject = myHum
@@ -308,7 +325,7 @@ local function TeleportFling(targetPlayer)
     
     FlingActive = false
     print("[Fling] ========================================")
-    print("[Fling] COMPLETE! Target launched!")
+    print("[Fling] COMPLETE! Target launched by spin!")
     print("[Fling] ========================================")
     return true
 end
@@ -381,7 +398,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ MM2 v9.0 - TELEPORT FLING"
+Title.Text = " MM2 v10.0 - SPIN FLING"
 Title.TextColor3 = Color3.fromRGB(0, 220, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -536,19 +553,19 @@ CreateToggle(espContent, espLayout, "XRay", false, function(v) Config.ESP.XRay =
 CreateToggle(espContent, espLayout, "Gun Highlight", false, function(v) Config.GunESP.Enabled = v end)
 
 -- Fling
-CreateButton(flingContent, flingLayout, "🚀 Teleport Fling Nearest", function()
+CreateButton(flingContent, flingLayout, "🌀 Spin Fling Nearest", function()
     local t = GetNearestPlayer()
-    if t then task.spawn(function() TeleportFling(t) end) 
+    if t then task.spawn(function() SpinFling(t) end) 
     else warn("No target!") end
 end)
-CreateButton(flingContent, flingLayout, "🔪 Teleport Fling Murderer", function()
+CreateButton(flingContent, flingLayout, "🌀 Spin Fling Murderer", function()
     local t = GetPlayerByRole("Murderer")
-    if t then task.spawn(function() TeleportFling(t) end) 
+    if t then task.spawn(function() SpinFling(t) end) 
     else warn("Murderer not found!") end
 end)
-CreateButton(flingContent, flingLayout, " Teleport Fling Sheriff", function()
+CreateButton(flingContent, flingLayout, "🌀 Spin Fling Sheriff", function()
     local t = GetPlayerByRole("Sheriff")
-    if t then task.spawn(function() TeleportFling(t) end) 
+    if t then task.spawn(function() SpinFling(t) end) 
     else warn("Sheriff not found!") end
 end)
 
@@ -595,7 +612,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 print("========================================")
-print("✅ MM2 Script v9.0 Loaded!")
-print("🚀 TELEPORT FLING SYSTEM READY")
+print("✅ MM2 Script v10.0 Loaded!")
+print("🌀 SPIN FLING SYSTEM READY")
 print(" ESP | Fling | Movement")
 print("========================================")
