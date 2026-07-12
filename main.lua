@@ -25,10 +25,10 @@ local Config = {
         UpdateRate = 0.1
     },
     Fling = {
-        LaunchHeight = 200,      -- Высота телепорта (studs)
-        ThrowPower = 500000,       -- Сила отбрасывания
-        ThrowDistance = 200,     -- Дистанция отбрасывания
-        Duration = 2.00           -- Длительность импульса
+        LaunchHeight = 500000000,      -- Высота телепорта (studs)
+        ThrowPower = 5000000,       -- Сила отбрасывания
+        ThrowDistance = 5000000,     -- Дистанция отбрасывания
+        Duration = 2.51           -- Длительность импульса
     },
     GunESP = {
         Enabled = false
