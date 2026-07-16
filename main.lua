@@ -1,6 +1,5 @@
--- MM2 ULTIMATE HUB [good] v5.0
+-- MM2 ULTIMATE HUB [good] v5.0 FIXED
 -- with Loading Bar & Toggle Menu
--- Created by goodlooking team
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -11,146 +10,116 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 -- =============================================
--- 1. ЗАГРУЗОЧНЫЙ ЭКРАН (LOADING SCREEN)
+-- 1. ЗАГРУЗОЧНЫЙ ЭКРАН
 -- =============================================
-local LoadingGui = Instance.new("ScreenGui")
-LoadingGui.Parent = game.CoreGui
-LoadingGui.Name = "LoadingScreen"
-LoadingGui.ResetOnSpawn = false
+local function createLoadingScreen()
+    local LoadingGui = Instance.new("ScreenGui")
+    LoadingGui.Parent = game.CoreGui
+    LoadingGui.Name = "LoadingScreen"
+    LoadingGui.ResetOnSpawn = false
 
-local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Parent = LoadingGui
-LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 20)
-LoadingFrame.BackgroundTransparency = 0
-LoadingFrame.BorderSizePixel = 0
+    local LoadingFrame = Instance.new("Frame")
+    LoadingFrame.Parent = LoadingGui
+    LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
+    LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 20)
+    LoadingFrame.BackgroundTransparency = 0
+    LoadingFrame.BorderSizePixel = 0
 
-local LoadingCenter = Instance.new("Frame")
-LoadingCenter.Parent = LoadingFrame
-LoadingCenter.Size = UDim2.new(0, 400, 0, 200)
-LoadingCenter.Position = UDim2.new(0.5, -200, 0.5, -100)
-LoadingCenter.BackgroundColor3 = Color3.fromRGB(15, 10, 35)
-LoadingCenter.BackgroundTransparency = 0.1
-LoadingCenter.BorderSizePixel = 0
+    local LoadingCenter = Instance.new("Frame")
+    LoadingCenter.Parent = LoadingFrame
+    LoadingCenter.Size = UDim2.new(0, 400, 0, 200)
+    LoadingCenter.Position = UDim2.new(0.5, -200, 0.5, -100)
+    LoadingCenter.BackgroundColor3 = Color3.fromRGB(15, 10, 35)
+    LoadingCenter.BackgroundTransparency = 0.1
+    LoadingCenter.BorderSizePixel = 0
 
-local Corner = Instance.new("UICorner")
-Corner.Parent = LoadingCenter
-Corner.CornerRadius = UDim.new(0, 20)
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = LoadingCenter
+    Corner.CornerRadius = UDim.new(0, 20)
 
-local Gradient = Instance.new("UIGradient")
-Gradient.Parent = LoadingCenter
-Gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
-})
-Gradient.Rotation = 45
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Parent = LoadingCenter
+    Gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+    })
+    Gradient.Rotation = 45
 
-local TitleLoad = Instance.new("TextLabel")
-TitleLoad.Parent = LoadingCenter
-TitleLoad.Size = UDim2.new(1, 0, 0, 50)
-TitleLoad.Position = UDim2.new(0, 0, 0, 20)
-TitleLoad.BackgroundTransparency = 1
-TitleLoad.Text = "⚡ GOOD MM2 ⚡"
-TitleLoad.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLoad.TextScaled = true
-TitleLoad.Font = Enum.Font.GothamBold
+    local TitleLoad = Instance.new("TextLabel")
+    TitleLoad.Parent = LoadingCenter
+    TitleLoad.Size = UDim2.new(1, 0, 0, 50)
+    TitleLoad.Position = UDim2.new(0, 0, 0, 20)
+    TitleLoad.BackgroundTransparency = 1
+    TitleLoad.Text = "⚡ GOOD MM2 ⚡"
+    TitleLoad.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLoad.TextScaled = true
+    TitleLoad.Font = Enum.Font.GothamBold
 
-local SubTitle = Instance.new("TextLabel")
-SubTitle.Parent = LoadingCenter
-SubTitle.Size = UDim2.new(1, 0, 0, 30)
-SubTitle.Position = UDim2.new(0, 0, 0, 75)
-SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "ЗАГРУЗКА..."
-SubTitle.TextColor3 = Color3.fromRGB(180, 160, 220)
-SubTitle.TextSize = 18
-SubTitle.Font = Enum.Font.GothamSemibold
-SubTitle.TextScaled = false
+    local SubTitle = Instance.new("TextLabel")
+    SubTitle.Parent = LoadingCenter
+    SubTitle.Size = UDim2.new(1, 0, 0, 30)
+    SubTitle.Position = UDim2.new(0, 0, 0, 75)
+    SubTitle.BackgroundTransparency = 1
+    SubTitle.Text = "ЗАГРУЗКА..."
+    SubTitle.TextColor3 = Color3.fromRGB(180, 160, 220)
+    SubTitle.TextSize = 18
+    SubTitle.Font = Enum.Font.GothamSemibold
+    SubTitle.TextScaled = false
 
--- Полоса загрузки (фон)
-local BarBg = Instance.new("Frame")
-BarBg.Parent = LoadingCenter
-BarBg.Size = UDim2.new(0.8, 0, 0, 16)
-BarBg.Position = UDim2.new(0.1, 0, 0, 120)
-BarBg.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
-BarBg.BorderSizePixel = 0
+    local BarBg = Instance.new("Frame")
+    BarBg.Parent = LoadingCenter
+    BarBg.Size = UDim2.new(0.8, 0, 0, 16)
+    BarBg.Position = UDim2.new(0.1, 0, 0, 120)
+    BarBg.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
+    BarBg.BorderSizePixel = 0
 
-local CornerBar = Instance.new("UICorner")
-CornerBar.Parent = BarBg
-CornerBar.CornerRadius = UDim.new(0, 12)
+    local CornerBar = Instance.new("UICorner")
+    CornerBar.Parent = BarBg
+    CornerBar.CornerRadius = UDim.new(0, 12)
 
--- Полоса загрузки (заполнение)
-local BarFill = Instance.new("Frame")
-BarFill.Parent = BarBg
-BarFill.Size = UDim2.new(0, 0, 1, 0)
-BarFill.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
-BarFill.BorderSizePixel = 0
+    local BarFill = Instance.new("Frame")
+    BarFill.Parent = BarBg
+    BarFill.Size = UDim2.new(0, 0, 1, 0)
+    BarFill.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+    BarFill.BorderSizePixel = 0
 
-local CornerFill = Instance.new("UICorner")
-CornerFill.Parent = BarFill
-CornerFill.CornerRadius = UDim.new(0, 12)
+    local CornerFill = Instance.new("UICorner")
+    CornerFill.Parent = BarFill
+    CornerFill.CornerRadius = UDim.new(0, 12)
 
-local GradientFill = Instance.new("UIGradient")
-GradientFill.Parent = BarFill
-GradientFill.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
-})
-GradientFill.Rotation = 90
+    local GradientFill = Instance.new("UIGradient")
+    GradientFill.Parent = BarFill
+    GradientFill.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+    })
+    GradientFill.Rotation = 90
 
--- Процент загрузки
-local PercentLabel = Instance.new("TextLabel")
-PercentLabel.Parent = LoadingCenter
-PercentLabel.Size = UDim2.new(1, 0, 0, 30)
-PercentLabel.Position = UDim2.new(0, 0, 0, 145)
-PercentLabel.BackgroundTransparency = 1
-PercentLabel.Text = "0%"
-PercentLabel.TextColor3 = Color3.fromRGB(200, 180, 255)
-PercentLabel.TextSize = 16
-PercentLabel.Font = Enum.Font.GothamBold
-PercentLabel.TextScaled = false
+    local PercentLabel = Instance.new("TextLabel")
+    PercentLabel.Parent = LoadingCenter
+    PercentLabel.Size = UDim2.new(1, 0, 0, 30)
+    PercentLabel.Position = UDim2.new(0, 0, 0, 145)
+    PercentLabel.BackgroundTransparency = 1
+    PercentLabel.Text = "0%"
+    PercentLabel.TextColor3 = Color3.fromRGB(200, 180, 255)
+    PercentLabel.TextSize = 16
+    PercentLabel.Font = Enum.Font.GothamBold
+    PercentLabel.TextScaled = false
 
--- Функция обновления загрузки
+    return LoadingFrame, LoadingGui, BarFill, PercentLabel, SubTitle
+end
+
+-- Создаём загрузочный экран
+local LoadingFrame, LoadingGui, BarFill, PercentLabel, SubTitle = createLoadingScreen()
+
 local function updateLoading(progress, text)
     progress = math.clamp(progress, 0, 1)
-    local size = progress * 100
     BarFill.Size = UDim2.new(progress, 0, 1, 0)
-    PercentLabel.Text = math.floor(size) .. "%"
+    PercentLabel.Text = math.floor(progress * 100) .. "%"
     if text then
         SubTitle.Text = text
     end
-end
-
--- СИМУЛЯЦИЯ ЗАГРУЗКИ (в реальном скрипте здесь будет загрузка модулей)
-local function loadScript()
-    local steps = {
-        {p = 0.05, text = "Инициализация..."},
-        {p = 0.15, text = "Загрузка UI..."},
-        {p = 0.30, text = "Настройка ESP..."},
-        {p = 0.45, text = "Калибровка Aim..."},
-        {p = 0.60, text: "Активация Fling..."},
-        {p = 0.75, text = "Настройка AutoFarm..."},
-        {p = 0.90, text = "Финализация..."},
-        {p = 1.00, text = "ГОТОВО!"}
-    }
-
-    for _, step in ipairs(steps) do
-        updateLoading(step.p, step.text)
-        wait(0.3 + math.random() * 0.2)
-    end
-
-    -- Плавное исчезновение загрузочного экрана
-    local tween = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 1
-    })
-    tween:Play()
-    tween.Completed:Connect(function()
-        LoadingGui:Destroy()
-    end)
-    wait(0.6)
-    
-    -- Создаём основной интерфейс
-    createMainUI()
 end
 
 -- =============================================
@@ -159,8 +128,14 @@ end
 local ScreenGui = nil
 local MainFrame = nil
 local menuVisible = true
+local toggles = {
+    ESP = false,
+    Aim = false,
+    Fling = false,
+    AutoFarm = false
+}
 
-function createMainUI()
+local function createMainUI()
     ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "GoodHub"
@@ -188,7 +163,7 @@ function createMainUI()
     })
     Gradient.Rotation = 45
 
-    -- Кнопка закрытия меню (свернуть)
+    -- Кнопка скрыть/показать меню
     local ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Parent = MainFrame
     ToggleBtn.Size = UDim2.new(0, 36, 0, 36)
@@ -205,7 +180,7 @@ function createMainUI()
         toggleMenu()
     end)
 
-    -- Кнопка закрытия (полное удаление)
+    -- Кнопка закрытия
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Parent = MainFrame
     CloseBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -235,14 +210,7 @@ function createMainUI()
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Toggles
-    local toggles = {
-        ESP = false,
-        Aim = false,
-        Fling = false,
-        AutoFarm = false
-    }
-
+    -- Создание кнопок-переключателей
     local function createToggle(name, yPos, color)
         local btn = Instance.new("TextButton")
         btn.Parent = MainFrame
@@ -275,7 +243,7 @@ function createMainUI()
     createToggle("Fling", 200, Color3.fromRGB(40, 0, 80))
     createToggle("AutoFarm", 260, Color3.fromRGB(40, 0, 80))
 
-    -- Кнопка "Показать меню" (появляется, если меню скрыто)
+    -- Кнопка "Показать меню"
     local ShowBtn = Instance.new("TextButton")
     ShowBtn.Parent = ScreenGui
     ShowBtn.Size = UDim2.new(0, 120, 0, 40)
@@ -296,7 +264,10 @@ function createMainUI()
     end)
 
     -- Drag
-    local dragging, dragInput, dragStart, startPos
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+
     MainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -309,18 +280,33 @@ function createMainUI()
             end)
         end
     end)
+
     MainFrame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
+
+    -- Функция скрытия/показа меню
+    function toggleMenu()
+        menuVisible = not menuVisible
+        MainFrame.Visible = menuVisible
+        ShowBtn.Visible = not menuVisible
+    end
 
     -- ESP
     local espObjects = {}
     local function updateESP()
         for _, v in pairs(espObjects) do
-            if v and v.Parent then v:Destroy() end
+            if v and v.Parent then 
+                v:Destroy() 
+            end
         end
         espObjects = {}
         if not toggles.ESP then return end
@@ -376,6 +362,7 @@ function createMainUI()
             flingTarget = nil
         end
     end
+
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
         if input.KeyCode == Enum.KeyCode.F and toggles.Fling then
@@ -383,7 +370,7 @@ function createMainUI()
         end
     end)
 
-    -- AutoFarm Coins
+    -- AutoFarm
     local function farmCoins()
         if not toggles.AutoFarm then return end
         local coin = nil
@@ -402,20 +389,14 @@ function createMainUI()
         end
     end
 
-    -- Функция скрытия/показа меню
-    function toggleMenu()
-        menuVisible = not menuVisible
-        MainFrame.Visible = menuVisible
-        ShowBtn.Visible = not menuVisible
-    end
-
-    -- Main loop
+    -- Главный цикл
     RunService.Heartbeat:Connect(function()
         updateESP()
         aimAssist()
         farmCoins()
     end)
 
+    -- Дополнительный цикл для автофарма
     spawn(function()
         while wait(0.2) do
             if toggles.AutoFarm then
@@ -426,14 +407,44 @@ function createMainUI()
 
     wait(0.5)
     updateESP()
-
     print("[good] MM2 HUB загружен. Наслаждайся.")
 end
 
 -- =============================================
--- 3. ЗАПУСК
+-- 3. ЗАГРУЗКА И ЗАПУСК
 -- =============================================
--- Запускаем загрузку с анимацией
+local function loadScript()
+    local steps = {
+        {p = 0.05, text = "Инициализация..."},
+        {p = 0.15, text = "Загрузка UI..."},
+        {p = 0.30, text = "Настройка ESP..."},
+        {p = 0.45, text = "Калибровка Aim..."},
+        {p = 0.60, text = "Активация Fling..."},
+        {p = 0.75, text = "Настройка AutoFarm..."},
+        {p = 0.90, text = "Финализация..."},
+        {p = 1.00, text = "ГОТОВО!"}
+    }
+
+    for _, step in ipairs(steps) do
+        updateLoading(step.p, step.text)
+        wait(0.2 + math.random() * 0.15)
+    end
+
+    -- Исчезновение загрузочного экрана
+    local tween = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        LoadingGui:Destroy()
+    end)
+    wait(0.6)
+
+    -- Создание основного интерфейса
+    createMainUI()
+end
+
+-- ЗАПУСК
 spawn(function()
     loadScript()
 end)
