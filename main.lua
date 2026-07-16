@@ -1,5 +1,5 @@
 -- MM2 MOBILE HUB v4.2
--- Compact for Phone
+-- FULL LAYOUT: Left Nav + Right Content
 -- Created by goodlooking team
 
 local Players = game:GetService("Players")
@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 -- =============================================
--- 1. ЗАГРУЗОЧНЫЙ ЭКРАН (КОМПАКТНЫЙ)
+-- 1. ЗАГРУЗОЧНЫЙ ЭКРАН
 -- =============================================
 local LoadingGui = Instance.new("ScreenGui")
 LoadingGui.Parent = game.CoreGui
@@ -116,16 +116,8 @@ local function updateLoading(progress, text)
 end
 
 -- =============================================
--- 2. ОСНОВНОЙ ИНТЕРФЕЙС (МОБИЛЬНЫЙ)
+-- 2. ТОГГЛЫ
 -- =============================================
-local ScreenGui = nil
-local MainFrame = nil
-local RightPanel = nil
-local menuVisible = true
-local currentTab = 1
-local tabs = {}
-
--- Тогглы
 local toggles = {
     ESP = false,
     Aim = false,
@@ -133,43 +125,53 @@ local toggles = {
     AutoFarm = false
 }
 
+-- =============================================
+-- 3. ОСНОВНОЙ ИНТЕРФЕЙС (ПО МАКЕТУ)
+-- =============================================
+local ScreenGui = nil
+local MainFrame = nil
+local currentTab = 1
+local navButtons = {}
+
 function createMainUI()
     ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "MM2MobileHub"
     ScreenGui.ResetOnSpawn = false
 
-    -- ОСНОВНОЙ КОНТЕЙНЕР
+    -- =============================================
+    -- ОСНОВНАЯ РАМКА
+    -- =============================================
     MainFrame = Instance.new("Frame")
     MainFrame.Parent = ScreenGui
-    MainFrame.Size = UDim2.new(0, 380, 0, 480)
-    MainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
-    MainFrame.BackgroundTransparency = 0.1
+    MainFrame.Size = UDim2.new(0, 400, 0, 500)
+    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 6, 25)
+    MainFrame.BackgroundTransparency = 0.05
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
 
-    local Corner = Instance.new("UICorner")
-    Corner.Parent = MainFrame
-    Corner.CornerRadius = UDim.new(0, 16)
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.Parent = MainFrame
+    MainCorner.CornerRadius = UDim.new(0, 16)
 
-    local Gradient = Instance.new("UIGradient")
-    Gradient.Parent = MainFrame
-    Gradient.Color = ColorSequence.new({
+    local MainGradient = Instance.new("UIGradient")
+    MainGradient.Parent = MainFrame
+    MainGradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
     })
-    Gradient.Rotation = 45
+    MainGradient.Rotation = 45
 
     -- =============================================
-    -- ВЕРХНЯЯ ПАНЕЛЬ
+    -- ВЕРХНЯЯ ПАНЕЛЬ (Лого + Статус)
     -- =============================================
     local TopPanel = Instance.new("Frame")
     TopPanel.Parent = MainFrame
-    TopPanel.Size = UDim2.new(1, 0, 0, 40)
+    TopPanel.Size = UDim2.new(1, 0, 0, 45)
     TopPanel.BackgroundColor3 = Color3.fromRGB(20, 12, 45)
-    TopPanel.BackgroundTransparency = 0.3
+    TopPanel.BackgroundTransparency = 0.4
     TopPanel.BorderSizePixel = 0
 
     local TopCorner = Instance.new("UICorner")
@@ -202,7 +204,7 @@ function createMainUI()
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Parent = TopPanel
     CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+    CloseBtn.Position = UDim2.new(1, -35, 0, 8)
     CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
     CloseBtn.Text = "✕"
     CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -213,7 +215,6 @@ function createMainUI()
     CloseCorner.CornerRadius = UDim.new(0, 8)
     CloseBtn.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
-        menuVisible = false
     end)
 
     -- =============================================
@@ -221,39 +222,46 @@ function createMainUI()
     -- =============================================
     local LeftPanel = Instance.new("Frame")
     LeftPanel.Parent = MainFrame
-    LeftPanel.Size = UDim2.new(0, 140, 0, -60)
+    LeftPanel.Size = UDim2.new(0, 150, 1, -80)
     LeftPanel.Position = UDim2.new(0, 0, 0, 50)
     LeftPanel.BackgroundColor3 = Color3.fromRGB(16, 10, 35)
     LeftPanel.BackgroundTransparency = 0.2
     LeftPanel.BorderSizePixel = 0
     LeftPanel.ClipsDescendants = true
 
-    local LeftCorner = Instance.new("UICorner")
-    LeftCorner.Parent = LeftPanel
-    LeftCorner.CornerRadius = UDim.new(0, 0)
+    local LeftBorder = Instance.new("Frame")
+    LeftBorder.Parent = LeftPanel
+    LeftBorder.Size = UDim2.new(0, 1, 1, 0)
+    LeftBorder.Position = UDim2.new(1, -1, 0, 0)
+    LeftBorder.BackgroundColor3 = Color3.fromRGB(100, 80, 180)
+    LeftBorder.BackgroundTransparency = 0.3
+    LeftBorder.BorderSizePixel = 0
 
     -- Кнопки навигации
-    local navButtons = {
-        {icon = "👁️", name = "ESP", badge = "3"},
-        {icon = "🎯", name = "AIM", badge = "2"},
-        {icon = "✈️", name = "FLY", badge = "4"},
-        {icon = "💰", name = "FARM", badge = "1"},
-        {icon = "⚙️", name = "CONFIG", badge = "0"},
-        {icon = "🌀", name = "MISC", badge = "5"}
+    local navData = {
+        {icon = "👁️", name = "ESP & VISUALS", badge = "3"},
+        {icon = "🎯", name = "COMBAT & AIMBOT", badge = "2"},
+        {icon = "✈️", name = "MOVEMENT & FLY", badge = "4"},
+        {icon = "💰", name = "AUTOFARM COINS", badge = "1"},
+        {icon = "⚙️", name = "CONFIGS & PRESETS", badge = "0"},
+        {icon = "🌀", name = "MISC & UTILITIES", badge = "5"}
     }
 
-    for i, data in ipairs(navButtons) do
+    for i, data in ipairs(navData) do
         local btn = Instance.new("TextButton")
         btn.Parent = LeftPanel
-        btn.Size = UDim2.new(1, 0, 0, 50)
-        btn.Position = UDim2.new(0, 0, 0, (i-1) * 50)
-        btn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
-        btn.BackgroundTransparency = 0.4
-        btn.Text = data.icon .. " " .. data.name .. " (" .. data.badge .. ")"
-        btn.TextColor3 = Color3.fromRGB(200, 180, 220)
-        btn.TextSize = 12
+        btn.Size = UDim2.new(1, 0, 0, 42)
+        btn.Position = UDim2.new(0, 0, 0, (i-1) * 42)
+        btn.BackgroundColor3 = (i == 1) and Color3.fromRGB(80, 0, 200) or Color3.fromRGB(30, 20, 60)
+        btn.BackgroundTransparency = (i == 1) and 0.3 or 0.5
+        btn.Text = data.icon .. " " .. data.name .. "  (" .. data.badge .. ")"
+        btn.TextColor3 = (i == 1) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 160, 220)
+        btn.TextSize = 11
         btn.Font = Enum.Font.GothamSemibold
         btn.BorderSizePixel = 0
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextWrapped = true
+        btn.ClipsDescendants = true
         btn.Tag = i
 
         local BtnCorner = Instance.new("UICorner")
@@ -263,48 +271,43 @@ function createMainUI()
         btn.MouseButton1Click:Connect(function()
             currentTab = i
             updateRightPanel(i)
-            -- Обновить активную кнопку
+            -- Обновить стиль кнопок
             for _, b in pairs(LeftPanel:GetChildren()) do
                 if b:IsA("TextButton") then
                     b.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
-                    b.TextColor3 = Color3.fromRGB(200, 180, 220)
+                    b.BackgroundTransparency = 0.5
+                    b.TextColor3 = Color3.fromRGB(180, 160, 220)
                 end
             end
             btn.BackgroundColor3 = Color3.fromRGB(80, 0, 200)
+            btn.BackgroundTransparency = 0.3
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         end)
 
-        table.insert(tabs, btn)
+        table.insert(navButtons, btn)
     end
 
     -- =============================================
     -- ПРАВАЯ ПАНЕЛЬ (КОНТЕНТ)
     -- =============================================
-    RightPanel = Instance.new("Frame")
+    local RightPanel = Instance.new("Frame")
     RightPanel.Parent = MainFrame
-    RightPanel.Size = UDim2.new(1, -150, 0, -70)
-    RightPanel.Position = UDim2.new(0, 145, 0, 50)
+    RightPanel.Size = UDim2.new(1, -155, 1, -80)
+    RightPanel.Position = UDim2.new(0, 150, 0, 50)
     RightPanel.BackgroundColor3 = Color3.fromRGB(10, 6, 25)
     RightPanel.BackgroundTransparency = 0.1
     RightPanel.BorderSizePixel = 0
     RightPanel.ClipsDescendants = true
-
-    local RightCorner = Instance.new("UICorner")
-    RightCorner.Parent = RightPanel
-    RightCorner.CornerRadius = UDim.new(0, 0)
-
-    -- Создаём контент для правой панели
-    createRightPanelContent()
 
     -- =============================================
     -- НИЖНЯЯ ПАНЕЛЬ (ФУТЕР)
     -- =============================================
     local Footer = Instance.new("Frame")
     Footer.Parent = MainFrame
-    Footer.Size = UDim2.new(1, 0, 0, 35)
-    Footer.Position = UDim2.new(0, 0, 1, -35)
+    Footer.Size = UDim2.new(1, 0, 0, 30)
+    Footer.Position = UDim2.new(0, 0, 1, -30)
     Footer.BackgroundColor3 = Color3.fromRGB(20, 12, 45)
-    Footer.BackgroundTransparency = 0.3
+    Footer.BackgroundTransparency = 0.4
     Footer.BorderSizePixel = 0
 
     local FootCorner = Instance.new("UICorner")
@@ -313,27 +316,173 @@ function createMainUI()
 
     local UserLabel = Instance.new("TextLabel")
     UserLabel.Parent = Footer
-    UserLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    UserLabel.Size = UDim2.new(0.35, 0, 1, 0)
     UserLabel.Position = UDim2.new(0.02, 0, 0, 0)
     UserLabel.BackgroundTransparency = 1
     UserLabel.Text = "👤 " .. (LocalPlayer.Name or "Player")
-    UserLabel.TextColor3 = Color3.fromRGB(200, 180, 220)
-    UserLabel.TextSize = 11
+    UserLabel.TextColor3 = Color3.fromRGB(180, 160, 220)
+    UserLabel.TextSize = 10
     UserLabel.Font = Enum.Font.GothamSemibold
     UserLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     local PingLabel = Instance.new("TextLabel")
     PingLabel.Parent = Footer
-    PingLabel.Size = UDim2.new(0.5, 0, 1, 0)
-    PingLabel.Position = UDim2.new(0.35, 0, 0, 0)
+    PingLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    PingLabel.Position = UDim2.new(0.3, 0, 0, 0)
     PingLabel.BackgroundTransparency = 1
-    PingLabel.Text = "📶 42ms | ⚡ 60 FPS"
-    PingLabel.TextColor3 = Color3.fromRGB(200, 180, 220)
-    PingLabel.TextSize = 11
+    PingLabel.Text = "📶 42ms | ⚡ 60 FPS | ✅ HWID: OK"
+    PingLabel.TextColor3 = Color3.fromRGB(180, 160, 220)
+    PingLabel.TextSize = 10
     PingLabel.Font = Enum.Font.GothamSemibold
     PingLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-    -- Drag (для мобильных)
+    -- =============================================
+    -- ДИНАМИЧЕСКИЙ КОНТЕНТ ПРАВОЙ ПАНЕЛИ
+    -- =============================================
+    local rightContents = {}
+
+    -- Функция создания контента для вкладок
+    function createTabContent(tabIndex)
+        local container = Instance.new("Frame")
+        container.Parent = RightPanel
+        container.Size = UDim2.new(1, 0, 1, 0)
+        container.BackgroundTransparency = 1
+        container.Visible = (tabIndex == 1)
+        container.Name = "Tab" .. tabIndex
+        
+        -- Заголовок
+        local title = Instance.new("TextLabel")
+        title.Parent = container
+        title.Size = UDim2.new(1, 0, 0, 30)
+        title.Position = UDim2.new(0, 0, 0, 5)
+        title.BackgroundTransparency = 1
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextSize = 15
+        title.Font = Enum.Font.GothamBold
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        
+        -- Подзаголовок
+        local subtitle = Instance.new("TextLabel")
+        subtitle.Parent = container
+        subtitle.Size = UDim2.new(1, 0, 0, 20)
+        subtitle.Position = UDim2.new(0, 0, 0, 38)
+        subtitle.BackgroundTransparency = 1
+        subtitle.TextColor3 = Color3.fromRGB(180, 160, 220)
+        subtitle.TextSize = 11
+        subtitle.Font = Enum.Font.GothamSemibold
+        subtitle.TextXAlignment = Enum.TextXAlignment.Left
+        
+        -- Контейнер для кнопок-тогглов
+        local toggleContainer = Instance.new("Frame")
+        toggleContainer.Parent = container
+        toggleContainer.Size = UDim2.new(1, 0, 1, -70)
+        toggleContainer.Position = UDim2.new(0, 0, 0, 65)
+        toggleContainer.BackgroundTransparency = 1
+        
+        -- Заполнение контентом
+        if tabIndex == 1 then -- ESP
+            title.Text = "👁️ ESP & VISUALS"
+            subtitle.Text = "Отображение сквозь стены: АКТИВНО (14 объектов)"
+            addToggle(toggleContainer, "ESP", 0, function()
+                toggles.ESP = not toggles.ESP
+            end)
+            addToggle(toggleContainer, "Players ESP", 40, function() end)
+            addToggle(toggleContainer, "Items ESP", 80, function() end)
+            
+        elseif tabIndex == 2 then -- COMBAT
+            title.Text = "🎯 COMBAT & AIMBOT"
+            subtitle.Text = "Цель: DarkKnight_99 [Убийца]"
+            addToggle(toggleContainer, "Aim Assist", 0, function()
+                toggles.Aim = not toggles.Aim
+            end)
+            addToggle(toggleContainer, "Silent Aim", 40, function() end)
+            addToggle(toggleContainer, "Trigger Bot", 80, function() end)
+            
+        elseif tabIndex == 3 then -- FLY
+            title.Text = "✈️ MOVEMENT & FLY"
+            subtitle.Text = "Fly: OFF | Speed: 16"
+            addToggle(toggleContainer, "Fling", 0, function()
+                toggles.Fling = not toggles.Fling
+            end)
+            addToggle(toggleContainer, "Fly Mode", 40, function() end)
+            addToggle(toggleContainer, "Noclip", 80, function() end)
+            
+        elseif tabIndex == 4 then -- FARM
+            title.Text = "💰 AUTOFARM COINS"
+            subtitle.Text = "Монет: 1 450 | CPM: 45 | Level: 14 min"
+            addToggle(toggleContainer, "Auto Farm", 0, function()
+                toggles.AutoFarm = not toggles.AutoFarm
+            end)
+            addToggle(toggleContainer, "Auto Collect", 40, function() end)
+            addToggle(toggleContainer, "Anti AFK", 80, function() end)
+            
+        elseif tabIndex == 5 then -- CONFIG
+            title.Text = "⚙️ CONFIGS & PRESETS"
+            subtitle.Text = "Активен: Legit_Sheriff_V2.json"
+            addToggle(toggleContainer, "Rage_Murderer", 0, function() end)
+            addToggle(toggleContainer, "Legit_Casual", 40, function() end)
+            addToggle(toggleContainer, "AFK_CoinFarm", 80, function() end)
+            
+        elseif tabIndex == 6 then -- MISC
+            title.Text = "🌀 MISC & UTILITIES"
+            subtitle.Text = "Игроков: 11/12 | Сервер: 2ч 14м"
+            addToggle(toggleContainer, "Chat Spy", 0, function() end)
+            addToggle(toggleContainer, "Anti AFK", 40, function() end)
+            addToggle(toggleContainer, "Auto Boxes", 80, function() end)
+        end
+        
+        return container
+    end
+
+    -- Функция создания кнопки-тоггла
+    function addToggle(parent, text, yPos, callback)
+        local btn = Instance.new("TextButton")
+        btn.Parent = parent
+        btn.Size = UDim2.new(0.95, 0, 0, 32)
+        btn.Position = UDim2.new(0.025, 0, 0, yPos)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 20, 80)
+        btn.BackgroundTransparency = 0.3
+        btn.Text = text .. ": OFF"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 12
+        btn.Font = Enum.Font.GothamSemibold
+        btn.BorderSizePixel = 0
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextWrapped = true
+        
+        local BtnCorner = Instance.new("UICorner")
+        BtnCorner.Parent = btn
+        BtnCorner.CornerRadius = UDim.new(0, 10)
+        
+        local isOn = false
+        btn.MouseButton1Click:Connect(function()
+            isOn = not isOn
+            btn.Text = text .. ": " .. (isOn and "ON" or "OFF")
+            btn.BackgroundColor3 = isOn and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(40, 20, 80)
+            if callback then callback() end
+        end)
+        
+        return btn
+    end
+
+    -- Создаём контент для всех вкладок
+    for i = 1, 6 do
+        rightContents[i] = createTabContent(i)
+    end
+
+    -- Функция обновления правой панели
+    function updateRightPanel(tabIndex)
+        for i, content in pairs(rightContents) do
+            content.Visible = (i == tabIndex)
+        end
+    end
+
+    -- Переключение на первую вкладку по умолчанию
+    updateRightPanel(1)
+
+    -- =============================================
+    -- DRAG ДЛЯ МОБИЛЬНЫХ
+    -- =============================================
     local dragging = false
     local dragStart = nil
     local startPos = nil
@@ -364,11 +513,8 @@ function createMainUI()
     end)
 
     -- =============================================
-    -- ФУНКЦИИ
+    -- ФУНКЦИИ СКРИПТА
     -- =============================================
-    updateRightPanel(1)
-
-    -- ESP
     local espObjects = {}
     local function updateESP()
         for _, v in pairs(espObjects) do
@@ -395,7 +541,6 @@ function createMainUI()
         end
     end
 
-    -- Aim
     local function aimAssist()
         if not toggles.Aim then return end
         local target = nil
@@ -415,7 +560,6 @@ function createMainUI()
         end
     end
 
-    -- Fling
     local flingTarget = nil
     local function flingPlayer()
         if not toggles.Fling then return end
@@ -436,7 +580,6 @@ function createMainUI()
         end
     end)
 
-    -- AutoFarm
     local function farmCoins()
         if not toggles.AutoFarm then return end
         local coin = nil
@@ -455,7 +598,6 @@ function createMainUI()
         end
     end
 
-    -- Главный цикл
     RunService.Heartbeat:Connect(function()
         updateESP()
         aimAssist()
@@ -472,233 +614,7 @@ function createMainUI()
 
     wait(0.5)
     updateESP()
-    print("[MM2 MOBILE] HUB загружен!")
-end
-
--- =============================================
--- 3. КОНТЕНТ ПРАВОЙ ПАНЕЛИ
--- =============================================
-function createRightPanelContent()
-    -- Контент для каждой вкладки
-    local contents = {}
-
-    -- Вкладка 1: ESP
-    local espContent = Instance.new("Frame")
-    espContent.Parent = RightPanel
-    espContent.Size = UDim2.new(1, 0, 1, 0)
-    espContent.BackgroundTransparency = 1
-    espContent.Visible = false
-    contents[1] = espContent
-
-    local espTitle = Instance.new("TextLabel")
-    espTitle.Parent = espContent
-    espTitle.Size = UDim2.new(1, 0, 0, 30)
-    espTitle.Position = UDim2.new(0, 0, 0, 5)
-    espTitle.BackgroundTransparency = 1
-    espTitle.Text = "👁️ ESP & VISUALS"
-    espTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    espTitle.TextSize = 16
-    espTitle.Font = Enum.Font.GothamBold
-
-    local espStatus = Instance.new("TextLabel")
-    espStatus.Parent = espContent
-    espStatus.Size = UDim2.new(1, 0, 0, 20)
-    espStatus.Position = UDim2.new(0, 0, 0, 38)
-    espStatus.BackgroundTransparency = 1
-    espStatus.Text = "Статус: АКТИВНО (14 объектов)"
-    espStatus.TextColor3 = Color3.fromRGB(180, 160, 220)
-    espStatus.TextSize = 12
-    espStatus.Font = Enum.Font.GothamSemibold
-
-    local espBtn = createToggleButton(espContent, "Включить ESP", 70, function()
-        toggles.ESP = not toggles.ESP
-    end)
-
-    -- Вкладка 2: AIM
-    local aimContent = Instance.new("Frame")
-    aimContent.Parent = RightPanel
-    aimContent.Size = UDim2.new(1, 0, 1, 0)
-    aimContent.BackgroundTransparency = 1
-    aimContent.Visible = false
-    contents[2] = aimContent
-
-    local aimTitle = Instance.new("TextLabel")
-    aimTitle.Parent = aimContent
-    aimTitle.Size = UDim2.new(1, 0, 0, 30)
-    aimTitle.Position = UDim2.new(0, 0, 0, 5)
-    aimTitle.BackgroundTransparency = 1
-    aimTitle.Text = "🎯 COMBAT & AIMBOT"
-    aimTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    aimTitle.TextSize = 16
-    aimTitle.Font = Enum.Font.GothamBold
-
-    local aimStatus = Instance.new("TextLabel")
-    aimStatus.Parent = aimContent
-    aimStatus.Size = UDim2.new(1, 0, 0, 20)
-    aimStatus.Position = UDim2.new(0, 0, 0, 38)
-    aimStatus.BackgroundTransparency = 1
-    aimStatus.Text = "Цель: DarkKnight_99 [Убийца]"
-    aimStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
-    aimStatus.TextSize = 12
-    aimStatus.Font = Enum.Font.GothamSemibold
-
-    local aimBtn = createToggleButton(aimContent, "Включить Aim", 70, function()
-        toggles.Aim = not toggles.Aim
-    end)
-
-    -- Вкладка 3: FLY
-    local flyContent = Instance.new("Frame")
-    flyContent.Parent = RightPanel
-    flyContent.Size = UDim2.new(1, 0, 1, 0)
-    flyContent.BackgroundTransparency = 1
-    flyContent.Visible = false
-    contents[3] = flyContent
-
-    local flyTitle = Instance.new("TextLabel")
-    flyTitle.Parent = flyContent
-    flyTitle.Size = UDim2.new(1, 0, 0, 30)
-    flyTitle.Position = UDim2.new(0, 0, 0, 5)
-    flyTitle.BackgroundTransparency = 1
-    flyTitle.Text = "✈️ MOVEMENT & FLY"
-    flyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    flyTitle.TextSize = 16
-    flyTitle.Font = Enum.Font.GothamBold
-
-    local flyStatus = Instance.new("TextLabel")
-    flyStatus.Parent = flyContent
-    flyStatus.Size = UDim2.new(1, 0, 0, 20)
-    flyStatus.Position = UDim2.new(0, 0, 0, 38)
-    flyStatus.BackgroundTransparency = 1
-    flyStatus.Text = "Fly: OFF | Speed: 16"
-    flyStatus.TextColor3 = Color3.fromRGB(180, 160, 220)
-    flyStatus.TextSize = 12
-    flyStatus.Font = Enum.Font.GothamSemibold
-
-    local flyBtn = createToggleButton(flyContent, "Включить Fling", 70, function()
-        toggles.Fling = not toggles.Fling
-    end)
-
-    -- Вкладка 4: FARM
-    local farmContent = Instance.new("Frame")
-    farmContent.Parent = RightPanel
-    farmContent.Size = UDim2.new(1, 0, 1, 0)
-    farmContent.BackgroundTransparency = 1
-    farmContent.Visible = false
-    contents[4] = farmContent
-
-    local farmTitle = Instance.new("TextLabel")
-    farmTitle.Parent = farmContent
-    farmTitle.Size = UDim2.new(1, 0, 0, 30)
-    farmTitle.Position = UDim2.new(0, 0, 0, 5)
-    farmTitle.BackgroundTransparency = 1
-    farmTitle.Text = "💰 AUTOFARM COINS"
-    farmTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    farmTitle.TextSize = 16
-    farmTitle.Font = Enum.Font.GothamBold
-
-    local farmStatus = Instance.new("TextLabel")
-    farmStatus.Parent = farmContent
-    farmStatus.Size = UDim2.new(1, 0, 0, 20)
-    farmStatus.Position = UDim2.new(0, 0, 0, 38)
-    farmStatus.BackgroundTransparency = 1
-    farmStatus.Text = "Монет: 1 450 | CPM: 45"
-    farmStatus.TextColor3 = Color3.fromRGB(255, 200, 80)
-    farmStatus.TextSize = 12
-    farmStatus.Font = Enum.Font.GothamSemibold
-
-    local farmBtn = createToggleButton(farmContent, "Включить AutoFarm", 70, function()
-        toggles.AutoFarm = not toggles.AutoFarm
-    end)
-
-    -- Вкладка 5: CONFIG
-    local configContent = Instance.new("Frame")
-    configContent.Parent = RightPanel
-    configContent.Size = UDim2.new(1, 0, 1, 0)
-    configContent.BackgroundTransparency = 1
-    configContent.Visible = false
-    contents[5] = configContent
-
-    local configTitle = Instance.new("TextLabel")
-    configTitle.Parent = configContent
-    configTitle.Size = UDim2.new(1, 0, 0, 30)
-    configTitle.Position = UDim2.new(0, 0, 0, 5)
-    configTitle.BackgroundTransparency = 1
-    configTitle.Text = "⚙️ CONFIGS & PRESETS"
-    configTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    configTitle.TextSize = 16
-    configTitle.Font = Enum.Font.GothamBold
-
-    local configStatus = Instance.new("TextLabel")
-    configStatus.Parent = configContent
-    configStatus.Size = UDim2.new(1, 0, 0, 20)
-    configStatus.Position = UDim2.new(0, 0, 0, 38)
-    configStatus.BackgroundTransparency = 1
-    configStatus.Text = "Активен: Legit_Sheriff_V2"
-    configStatus.TextColor3 = Color3.fromRGB(180, 160, 220)
-    configStatus.TextSize = 12
-    configStatus.Font = Enum.Font.GothamSemibold
-
-    -- Вкладка 6: MISC
-    local miscContent = Instance.new("Frame")
-    miscContent.Parent = RightPanel
-    miscContent.Size = UDim2.new(1, 0, 1, 0)
-    miscContent.BackgroundTransparency = 1
-    miscContent.Visible = false
-    contents[6] = miscContent
-
-    local miscTitle = Instance.new("TextLabel")
-    miscTitle.Parent = miscContent
-    miscTitle.Size = UDim2.new(1, 0, 0, 30)
-    miscTitle.Position = UDim2.new(0, 0, 0, 5)
-    miscTitle.BackgroundTransparency = 1
-    miscTitle.Text = "🌀 MISC & UTILITIES"
-    miscTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    miscTitle.TextSize = 16
-    miscTitle.Font = Enum.Font.GothamBold
-
-    local miscStatus = Instance.new("TextLabel")
-    miscStatus.Parent = miscContent
-    miscStatus.Size = UDim2.new(1, 0, 0, 20)
-    miscStatus.Position = UDim2.new(0, 0, 0, 38)
-    miscStatus.BackgroundTransparency = 1
-    miscStatus.Text = "Игроков: 11/12 | Сервер: 2ч"
-    miscStatus.TextColor3 = Color3.fromRGB(180, 160, 220)
-    miscStatus.TextSize = 12
-    miscStatus.Font = Enum.Font.GothamSemibold
-
-    function updateRightPanel(tabIndex)
-        for i, content in pairs(contents) do
-            content.Visible = (i == tabIndex)
-        end
-    end
-end
-
-function createToggleButton(parent, text, yPos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Parent = parent
-    btn.Size = UDim2.new(0.9, 0, 0, 40)
-    btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 20, 80)
-    btn.BackgroundTransparency = 0.3
-    btn.Text = text .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 14
-    btn.Font = Enum.Font.GothamSemibold
-    btn.BorderSizePixel = 0
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.Parent = btn
-    BtnCorner.CornerRadius = UDim.new(0, 12)
-
-    local isOn = false
-    btn.MouseButton1Click:Connect(function()
-        isOn = not isOn
-        btn.Text = text .. ": " .. (isOn and "ON" or "OFF")
-        btn.BackgroundColor3 = isOn and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(40, 20, 80)
-        if callback then callback() end
-    end)
-
-    return btn
+    print("[MM2 MOBILE] HUB загружен по макету!")
 end
 
 -- =============================================
