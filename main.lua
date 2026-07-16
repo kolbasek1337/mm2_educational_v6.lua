@@ -1,512 +1,439 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MM2 Script UI - Левая панель</title>
-    <style>
-        /* Глобальный фон и шрифты */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+-- MM2 ULTIMATE HUB [good] v5.0
+-- with Loading Bar & Toggle Menu
+-- Created by goodlooking team
 
-        body {
-            background: #0b0b1a;
-            font-family: 'Segoe UI', 'Gotham', system-ui, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
-        /* Основной контейнер UI */
-        .ui-container {
-            display: flex;
-            gap: 0;
-            background: rgba(10, 10, 30, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 60px rgba(80, 0, 255, 0.1);
-            overflow: hidden;
-            max-width: 1100px;
-            width: 100%;
-            height: 700px;
-            color: #e0d8f0;
-        }
+-- =============================================
+-- 1. ЗАГРУЗОЧНЫЙ ЭКРАН (LOADING SCREEN)
+-- =============================================
+local LoadingGui = Instance.new("ScreenGui")
+LoadingGui.Parent = game.CoreGui
+LoadingGui.Name = "LoadingScreen"
+LoadingGui.ResetOnSpawn = false
 
-        /* ===== ЛЕВАЯ ПАНЕЛЬ ===== */
-        .left-panel {
-            width: 380px;
-            min-width: 320px;
-            background: rgba(16, 12, 35, 0.7);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            flex-direction: column;
-            padding: 18px 16px 14px;
-            height: 100%;
-            overflow: hidden;
-        }
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Parent = LoadingGui
+LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 20)
+LoadingFrame.BackgroundTransparency = 0
+LoadingFrame.BorderSizePixel = 0
 
-        /* Верхний колонтитул */
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 20px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #b380ff, #60d0ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .logo small {
-            font-size: 12px;
-            font-weight: 400;
-            color: #7a6a9a;
-            background: rgba(255,255,255,0.04);
-            padding: 2px 12px;
-            border-radius: 30px;
-            letter-spacing: 0.3px;
-        }
-        .status-badge {
-            font-size: 11px;
-            background: #00b86b33;
-            border: 1px solid #00b86b66;
-            padding: 4px 14px;
-            border-radius: 30px;
-            color: #80e0b0;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
+local LoadingCenter = Instance.new("Frame")
+LoadingCenter.Parent = LoadingFrame
+LoadingCenter.Size = UDim2.new(0, 400, 0, 200)
+LoadingCenter.Position = UDim2.new(0.5, -200, 0.5, -100)
+LoadingCenter.BackgroundColor3 = Color3.fromRGB(15, 10, 35)
+LoadingCenter.BackgroundTransparency = 0.1
+LoadingCenter.BorderSizePixel = 0
 
-        /* Список навигационных кнопок */
-        .nav-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 16px 0 12px;
-            flex-shrink: 0;
-        }
+local Corner = Instance.new("UICorner")
+Corner.Parent = LoadingCenter
+Corner.CornerRadius = UDim.new(0, 20)
 
-        .nav-btn {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
-            border-radius: 14px;
-            background: transparent;
-            border: none;
-            color: #a090b8;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: left;
-            width: 100%;
-            font-family: inherit;
-            position: relative;
-        }
-        .nav-btn .badge {
-            margin-left: auto;
-            background: rgba(255,255,255,0.06);
-            padding: 1px 12px;
-            border-radius: 30px;
-            font-size: 12px;
-            color: #7a6a9a;
-            font-weight: 500;
-        }
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.04);
-            color: #d0c0e8;
-        }
-        .nav-btn.active {
-            background: rgba(128, 0, 255, 0.2);
-            color: #fff;
-            box-shadow: inset 3px 0 0 #8b4dff, 0 4px 20px rgba(128, 0, 255, 0.1);
-        }
-        .nav-btn .icon {
-            font-size: 20px;
-            width: 28px;
-            text-align: center;
-        }
+local Gradient = Instance.new("UIGradient")
+Gradient.Parent = LoadingCenter
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+})
+Gradient.Rotation = 45
 
-        /* Содержимое левой панели (динамическое) */
-        .panel-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 6px 4px 10px;
-            margin-top: 4px;
-            border-top: 1px solid rgba(255, 255, 255, 0.03);
-            scrollbar-width: thin;
-            scrollbar-color: #3a2a5a transparent;
-        }
-        .panel-content::-webkit-scrollbar { width: 4px; }
-        .panel-content::-webkit-scrollbar-track { background: transparent; }
-        .panel-content::-webkit-scrollbar-thumb { background: #3a2a5a; border-radius: 10px; }
+local TitleLoad = Instance.new("TextLabel")
+TitleLoad.Parent = LoadingCenter
+TitleLoad.Size = UDim2.new(1, 0, 0, 50)
+TitleLoad.Position = UDim2.new(0, 0, 0, 20)
+TitleLoad.BackgroundTransparency = 1
+TitleLoad.Text = "⚡ GOOD MM2 ⚡"
+TitleLoad.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLoad.TextScaled = true
+TitleLoad.Font = Enum.Font.GothamBold
 
-        /* Стили для контента вкладок */
-        .tab-content {
-            display: none;
-            animation: fadeSlide 0.25s ease;
-        }
-        .tab-content.active {
-            display: block;
-        }
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Parent = LoadingCenter
+SubTitle.Size = UDim2.new(1, 0, 0, 30)
+SubTitle.Position = UDim2.new(0, 0, 0, 75)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "ЗАГРУЗКА..."
+SubTitle.TextColor3 = Color3.fromRGB(180, 160, 220)
+SubTitle.TextSize = 18
+SubTitle.Font = Enum.Font.GothamSemibold
+SubTitle.TextScaled = false
 
-        @keyframes fadeSlide {
-            from { opacity: 0.3; transform: translateX(8px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+-- Полоса загрузки (фон)
+local BarBg = Instance.new("Frame")
+BarBg.Parent = LoadingCenter
+BarBg.Size = UDim2.new(0.8, 0, 0, 16)
+BarBg.Position = UDim2.new(0.1, 0, 0, 120)
+BarBg.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
+BarBg.BorderSizePixel = 0
 
-        .tab-content h2 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #c8b8e8;
-            margin-bottom: 10px;
-            letter-spacing: 0.3px;
-        }
-        .tab-content .subhead {
-            font-size: 13px;
-            color: #8a7aa8;
-            margin-bottom: 16px;
-            background: rgba(255,255,255,0.03);
-            padding: 8px 14px;
-            border-radius: 12px;
-            border-left: 3px solid #6a4a9a;
-        }
-        .tab-content .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 14px;
-        }
-        .tab-content .stat-row .label { color: #9a8ab0; }
-        .tab-content .stat-row .value { font-weight: 600; color: #e0d8f0; }
-        .tab-content .stat-row .value.highlight-red { color: #ff5a6a; }
-        .tab-content .stat-row .value.highlight-blue { color: #5aa0ff; }
-        .tab-content .stat-row .value.highlight-green { color: #50d090; }
-        .tab-content .stat-row .value.highlight-gold { color: #ffc850; }
+local CornerBar = Instance.new("UICorner")
+CornerBar.Parent = BarBg
+CornerBar.CornerRadius = UDim.new(0, 12)
 
-        .tag {
-            display: inline-block;
-            padding: 2px 14px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .tag.green { background: #00b86b33; color: #80e0b0; }
-        .tag.red { background: #ff3b3b33; color: #ff7a7a; }
-        .tag.orange { background: #ff8c1a33; color: #ffb347; }
-        .tag.blue { background: #3b7bff33; color: #80b0ff; }
+-- Полоса загрузки (заполнение)
+local BarFill = Instance.new("Frame")
+BarFill.Parent = BarBg
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+BarFill.BorderSizePixel = 0
 
-        .mini-toggle {
-            display: inline-block;
-            background: rgba(255,255,255,0.06);
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            margin: 3px 4px 3px 0;
-        }
-        .mini-toggle.on { background: #00b86b44; color: #80e0b0; border: 1px solid #00b86b55; }
-        .mini-toggle.off { background: #3a2a5a55; color: #8a7aa8; border: 1px solid #4a3a6a55; }
+local CornerFill = Instance.new("UICorner")
+CornerFill.Parent = BarFill
+CornerFill.CornerRadius = UDim.new(0, 12)
 
-        .warning-box {
-            background: rgba(255, 60, 60, 0.08);
-            border-left: 4px solid #ff5a5a;
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-top: 12px;
-            font-size: 13px;
-            color: #d0b0b0;
-        }
+local GradientFill = Instance.new("UIGradient")
+GradientFill.Parent = BarFill
+GradientFill.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+})
+GradientFill.Rotation = 90
 
-        .file-item {
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-            margin: 4px 0;
-            font-size: 14px;
-            border-left: 3px solid #6a4a9a;
-        }
+-- Процент загрузки
+local PercentLabel = Instance.new("TextLabel")
+PercentLabel.Parent = LoadingCenter
+PercentLabel.Size = UDim2.new(1, 0, 0, 30)
+PercentLabel.Position = UDim2.new(0, 0, 0, 145)
+PercentLabel.BackgroundTransparency = 1
+PercentLabel.Text = "0%"
+PercentLabel.TextColor3 = Color3.fromRGB(200, 180, 255)
+PercentLabel.TextSize = 16
+PercentLabel.Font = Enum.Font.GothamBold
+PercentLabel.TextScaled = false
 
-        /* Нижний блок (футер) */
-        .panel-footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 12px;
-            margin-top: 6px;
-            flex-shrink: 0;
-            font-size: 12px;
-        }
-        .footer-stats {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 6px 10px;
-            color: #7a6a9a;
-        }
-        .footer-stats span strong { color: #b0a0c8; font-weight: 500; }
-        .panic-btn {
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            background: #c0392b;
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: 0.15s;
-            text-transform: uppercase;
-        }
-        .panic-btn:hover {
-            background: #e74c3c;
-            transform: scale(1.01);
-            box-shadow: 0 0 30px #e74c3c55;
-        }
+-- Функция обновления загрузки
+local function updateLoading(progress, text)
+    progress = math.clamp(progress, 0, 1)
+    local size = progress * 100
+    BarFill.Size = UDim2.new(progress, 0, 1, 0)
+    PercentLabel.Text = math.floor(size) .. "%"
+    if text then
+        SubTitle.Text = text
+    end
+end
 
-        /* ===== ПРАВАЯ ПАНЕЛЬ (заглушка) ===== */
-        .right-panel {
-            flex: 1;
-            background: rgba(8, 8, 22, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4a3a6a;
-            font-size: 22px;
-            font-weight: 300;
-            letter-spacing: 1px;
-            padding: 30px;
-            text-align: center;
-            border-left: 1px solid rgba(255,255,255,0.03);
-        }
-        .right-panel span {
-            background: rgba(255,255,255,0.02);
-            padding: 20px 40px;
-            border-radius: 20px;
-            border: 1px dashed #3a2a5a;
-        }
+-- СИМУЛЯЦИЯ ЗАГРУЗКИ (в реальном скрипте здесь будет загрузка модулей)
+local function loadScript()
+    local steps = {
+        {p = 0.05, text = "Инициализация..."},
+        {p = 0.15, text = "Загрузка UI..."},
+        {p = 0.30, text = "Настройка ESP..."},
+        {p = 0.45, text = "Калибровка Aim..."},
+        {p = 0.60, text: "Активация Fling..."},
+        {p = 0.75, text = "Настройка AutoFarm..."},
+        {p = 0.90, text = "Финализация..."},
+        {p = 1.00, text = "ГОТОВО!"}
+    }
 
-        /* Адаптивность */
-        @media (max-width: 820px) {
-            .ui-container { flex-direction: column; height: auto; max-height: 95vh; }
-            .left-panel { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); height: 60vh; }
-            .right-panel { min-height: 120px; }
-        }
-    </style>
-</head>
-<body>
+    for _, step in ipairs(steps) do
+        updateLoading(step.p, step.text)
+        wait(0.3 + math.random() * 0.2)
+    end
 
-<div class="ui-container">
-    <!-- ЛЕВАЯ ПАНЕЛЬ -->
-    <div class="left-panel" id="leftPanel">
-        <!-- Верхний колонтитул -->
-        <div class="panel-header">
-            <div class="logo">
-                🔫 MM2 CHEAT <small>v4.2</small>
-            </div>
-            <div class="status-badge">● ONLINE</div>
-        </div>
+    -- Плавное исчезновение загрузочного экрана
+    local tween = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        LoadingGui:Destroy()
+    end)
+    wait(0.6)
+    
+    -- Создаём основной интерфейс
+    createMainUI()
+end
 
-        <!-- Навигация -->
-        <div class="nav-list">
-            <button class="nav-btn active" data-tab="tab1"><span class="icon">👁️</span> ESP & VISUALS <span class="badge">3</span></button>
-            <button class="nav-btn" data-tab="tab2"><span class="icon">🎯</span> COMBAT & AIMBOT <span class="badge">2</span></button>
-            <button class="nav-btn" data-tab="tab3"><span class="icon">✈️</span> MOVEMENT & FLY <span class="badge">4</span></button>
-            <button class="nav-btn" data-tab="tab4"><span class="icon">💰</span> AUTOFARM COINS <span class="badge">1</span></button>
-            <button class="nav-btn" data-tab="tab5"><span class="icon">⚙️</span> CONFIGS & PRESETS <span class="badge">0</span></button>
-            <button class="nav-btn" data-tab="tab6"><span class="icon">🌀</span> MISC & UTILITIES <span class="badge">5</span></button>
-        </div>
+-- =============================================
+-- 2. ОСНОВНОЙ ИНТЕРФЕЙС
+-- =============================================
+local ScreenGui = nil
+local MainFrame = nil
+local menuVisible = true
 
-        <!-- Динамическое содержимое -->
-        <div class="panel-content" id="panelContent">
+function createMainUI()
+    ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = game.CoreGui
+    ScreenGui.Name = "GoodHub"
+    ScreenGui.ResetOnSpawn = false
 
-            <!-- ===== TAB 1: ESP ===== -->
-            <div class="tab-content active" id="tab1">
-                <h2>ESP & WORLD VISUALIZATION</h2>
-                <div class="subhead">Отображение сквозь стены: <span style="color:#80e0b0;font-weight:700;">АКТИВНО</span> (Отрендерено: 14 объектов)</div>
+    MainFrame = Instance.new("Frame")
+    MainFrame.Parent = ScreenGui
+    MainFrame.Size = UDim2.new(0, 420, 0, 520)
+    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -260)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 30)
+    MainFrame.BackgroundTransparency = 0.15
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
 
-                <div class="stat-row"><span class="label">⚔️ Murderer</span><span class="value highlight-red">DarkKnight_99</span></div>
-                <div class="stat-row"><span class="label">🤠 Sheriff</span><span class="value highlight-blue">SniperWolf_42</span></div>
-                <div class="stat-row"><span class="label">🔫 Dropped Gun</span><span class="value highlight-gold">Координаты: [23, 5, -12]</span></div>
-                <div class="stat-row"><span class="label">🧑 Innocents</span><span class="value">8 живых</span></div>
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = MainFrame
+    Corner.CornerRadius = UDim.new(0, 16)
 
-                <div style="margin-top:12px;padding:8px 12px;background:#00b86b15;border-radius:12px;border-left:3px solid #00b86b;">
-                    <span style="font-size:13px;color:#80e0b0;">✅ Bypass Anti-Cheat Visuals: <strong>SECURE</strong></span>
-                </div>
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Parent = MainFrame
+    Gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 0, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+    })
+    Gradient.Rotation = 45
 
-                <div style="margin-top:16px;">
-                    <span class="mini-toggle on">Players ESP</span>
-                    <span class="mini-toggle on">Items ESP</span>
-                    <span class="mini-toggle off">Radar 2D</span>
-                </div>
-            </div>
+    -- Кнопка закрытия меню (свернуть)
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Parent = MainFrame
+    ToggleBtn.Size = UDim2.new(0, 36, 0, 36)
+    ToggleBtn.Position = UDim2.new(1, -46, 0, 8)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 30, 80)
+    ToggleBtn.Text = "—"
+    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleBtn.TextSize = 24
+    ToggleBtn.Font = Enum.Font.GothamBold
+    local cornerToggle = Instance.new("UICorner")
+    cornerToggle.Parent = ToggleBtn
+    cornerToggle.CornerRadius = UDim.new(0, 10)
+    ToggleBtn.MouseButton1Click:Connect(function()
+        toggleMenu()
+    end)
 
-            <!-- ===== TAB 2: COMBAT ===== -->
-            <div class="tab-content" id="tab2">
-                <h2>COMBAT & TARGETING SYSTEM</h2>
-                <div class="subhead">Текущая цель: <span style="color:#ff5a6a;font-weight:700;">TARGET: DarkKnight_99 [Murderer]</span></div>
+    -- Кнопка закрытия (полное удаление)
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Parent = MainFrame
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -12, 0, 8)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseBtn.TextSize = 18
+    CloseBtn.Font = Enum.Font.GothamBold
+    local cornerClose = Instance.new("UICorner")
+    cornerClose.Parent = CloseBtn
+    cornerClose.CornerRadius = UDim.new(0, 10)
+    CloseBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+        menuVisible = false
+    end)
 
-                <div class="stat-row"><span class="label">🎯 FOV Radius</span><span class="value">150 px</span></div>
-                <div class="stat-row"><span class="label">📈 Prediction Mode</span><span class="value highlight-green">ENABLED</span></div>
-                <div class="stat-row"><span class="label">🤫 Silent Aim Status</span><span class="value highlight-green">Safe</span></div>
-                <div class="stat-row"><span class="label">🔪 Kill Aura Range</span><span class="value">3.5 studs</span></div>
+    -- Заголовок
+    local Title = Instance.new("TextLabel")
+    Title.Parent = MainFrame
+    Title.Size = UDim2.new(1, -100, 0, 40)
+    Title.Position = UDim2.new(0, 10, 0, 8)
+    Title.BackgroundTransparency = 1
+    Title.Text = "⚡ GOOD MM2 ⚡"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 22
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
 
-                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                    <span class="mini-toggle on">AIM: ON</span>
-                    <span class="mini-toggle off">SILENT: OFF</span>
-                    <span class="mini-toggle on">TRIGGER: ON</span>
-                </div>
-            </div>
+    -- Toggles
+    local toggles = {
+        ESP = false,
+        Aim = false,
+        Fling = false,
+        AutoFarm = false
+    }
 
-            <!-- ===== TAB 3: MOVEMENT ===== -->
-            <div class="tab-content" id="tab3">
-                <h2>MOVEMENT & PHYSICS MODIFICATIONS</h2>
-                <div class="subhead">Noclip: <span style="color:#ff7a7a;">OFF</span> | Fly: <span style="color:#80e0b0;">ON</span></div>
+    local function createToggle(name, yPos, color)
+        local btn = Instance.new("TextButton")
+        btn.Parent = MainFrame
+        btn.Size = UDim2.new(0.8, 0, 0, 40)
+        btn.Position = UDim2.new(0.1, 0, 0, yPos)
+        btn.BackgroundColor3 = color or Color3.fromRGB(30, 10, 60)
+        btn.BackgroundTransparency = 0.3
+        btn.Text = name .. ": OFF"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextScaled = true
+        btn.Font = Enum.Font.GothamSemibold
+        local cornerBtn = Instance.new("UICorner")
+        cornerBtn.Parent = btn
+        cornerBtn.CornerRadius = UDim.new(0, 12)
+        local glow = Instance.new("UIStroke")
+        glow.Parent = btn
+        glow.Color = Color3.fromRGB(150, 0, 255)
+        glow.Thickness = 1.5
+        btn.MouseButton1Click:Connect(function()
+            local key = name:gsub(" ", "")
+            toggles[key] = not toggles[key]
+            btn.Text = name .. ": " .. (toggles[key] and "ON" or "OFF")
+            btn.BackgroundColor3 = toggles[key] and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(30, 10, 60)
+        end)
+        return btn
+    end
 
-                <div class="stat-row"><span class="label">🚀 Current Speed</span><span class="value">16 → <span style="color:#ffc850;">50</span></span></div>
-                <div class="stat-row"><span class="label">🌀 Flin / Dodge State</span><span class="value highlight-green">READY</span></div>
-                <div style="font-size:13px;color:#9a8ab0;padding:4px 0 8px;">Автоматически уводит хитбокс при приближении ножа &lt; 5 studs</div>
+    createToggle("ESP", 80, Color3.fromRGB(40, 0, 80))
+    createToggle("Aim", 140, Color3.fromRGB(40, 0, 80))
+    createToggle("Fling", 200, Color3.fromRGB(40, 0, 80))
+    createToggle("AutoFarm", 260, Color3.fromRGB(40, 0, 80))
 
-                <div class="warning-box">
-                    ⚠️ Velocity Check: <strong style="color:#ffaa00;">RISK LEVEL - LOW</strong><br>
-                    <span style="font-size:12px;">Не выставляйте скорость выше 60 во избежание кика.</span>
-                </div>
-            </div>
+    -- Кнопка "Показать меню" (появляется, если меню скрыто)
+    local ShowBtn = Instance.new("TextButton")
+    ShowBtn.Parent = ScreenGui
+    ShowBtn.Size = UDim2.new(0, 120, 0, 40)
+    ShowBtn.Position = UDim2.new(0.5, -60, 0.9, 0)
+    ShowBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 200)
+    ShowBtn.Text = "📂 ПОКАЗАТЬ"
+    ShowBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ShowBtn.TextSize = 16
+    ShowBtn.Font = Enum.Font.GothamBold
+    ShowBtn.Visible = false
+    local cornerShow = Instance.new("UICorner")
+    cornerShow.Parent = ShowBtn
+    cornerShow.CornerRadius = UDim.new(0, 14)
+    ShowBtn.MouseButton1Click:Connect(function()
+        menuVisible = true
+        MainFrame.Visible = true
+        ShowBtn.Visible = false
+    end)
 
-            <!-- ===== TAB 4: AUTOFARM ===== -->
-            <div class="tab-content" id="tab4">
-                <h2>XP & COIN AUTOFARM MANAGER</h2>
-                <div class="subhead">STATUS: <span style="color:#80e0b0;font-weight:700;">FARMING...</span></div>
+    -- Drag
+    local dragging, dragInput, dragStart, startPos
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    MainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 
-                <div class="stat-row"><span class="label">🪙 Coins Collected</span><span class="value highlight-gold">1 450</span></div>
-                <div class="stat-row"><span class="label">⏱️ Coins Per Minute</span><span class="value highlight-green">45/min</span></div>
-                <div class="stat-row"><span class="label">🎒 Bags Filled</span><span class="value">12 / ∞</span></div>
-                <div class="stat-row"><span class="label">📈 Level Up Estimation</span><span class="value">14 mins</span></div>
+    -- ESP
+    local espObjects = {}
+    local function updateESP()
+        for _, v in pairs(espObjects) do
+            if v and v.Parent then v:Destroy() end
+        end
+        espObjects = {}
+        if not toggles.ESP then return end
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local bill = Instance.new("BillboardGui")
+                bill.Parent = plr.Character.HumanoidRootPart
+                bill.Size = UDim2.new(0, 100, 0, 40)
+                bill.AlwaysOnTop = true
+                local label = Instance.new("TextLabel")
+                label.Parent = bill
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = plr.Name .. "\n" .. (plr.Character:FindFirstChild("tool") and "🔪" or "🟢")
+                label.TextColor3 = plr.Character:FindFirstChild("tool") and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                label.TextScaled = true
+                label.Font = Enum.Font.GothamBold
+                table.insert(espObjects, bill)
+            end
+        end
+    end
 
-                <div style="margin-top:10px;background:#1a1a2e;border-radius:12px;padding:8px 12px;font-size:12px;color:#7a6a9a;font-family:monospace;">
-                    [15:32:01] Teleported to Coin (Safe Zone)<br>
-                    [15:32:04] Tween Speed Adjusted (Anti-Rubberband)<br>
-                    [15:32:10] Player spectating detected! Paused 3s.
-                </div>
-            </div>
+    -- Aim
+    local function aimAssist()
+        if not toggles.Aim then return end
+        local target = nil
+        local minDist = math.huge
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("tool") then
+                local dist = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    target = plr.Character.HumanoidRootPart
+                end
+            end
+        end
+        if target and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local cf = CFrame.new(LocalPlayer.Character.HumanoidRootPart.Position, target.Position)
+            LocalPlayer.Character.HumanoidRootPart.CFrame = cf
+        end
+    end
 
-            <!-- ===== TAB 5: CONFIGS ===== -->
-            <div class="tab-content" id="tab5">
-                <h2>CONFIGURATION & PRESET MANAGER</h2>
-                <div class="subhead">ACTIVE CONFIG: <span style="color:#80e0b0;">Legit_Sheriff_V2.json</span></div>
+    -- Fling
+    local flingTarget = nil
+    local function flingPlayer()
+        if not toggles.Fling then return end
+        if not flingTarget and Mouse.Target and Mouse.Target.Parent and Mouse.Target.Parent:FindFirstChild("Humanoid") then
+            flingTarget = Mouse.Target.Parent.HumanoidRootPart
+        end
+        if flingTarget and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local dir = (flingTarget.Position - LocalPlayer.Character.HumanoidRootPart.Position).Unit
+            flingTarget.Velocity = dir * 250 + Vector3.new(0, 80, 0)
+            flingTarget = nil
+        end
+    end
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == Enum.KeyCode.F and toggles.Fling then
+            flingPlayer()
+        end
+    end)
 
-                <div class="stat-row"><span class="label">📁 Workspace Path</span><span class="value" style="font-size:12px;">/MM2_Cheats/Configs/</span></div>
+    -- AutoFarm Coins
+    local function farmCoins()
+        if not toggles.AutoFarm then return end
+        local coin = nil
+        local minDist = math.huge
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj.Name == "Coin" and obj:IsA("Part") and obj.Parent and obj.Parent.Name ~= "LocalPlayer" then
+                local dist = (obj.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    coin = obj
+                end
+            end
+        end
+        if coin and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(coin.Position + Vector3.new(0, 2, 0))
+        end
+    end
 
-                <div class="file-item">📁 Rage_Murderer.json <span style="float:right;font-size:12px;color:#7a6a9a;">агрессивный</span></div>
-                <div class="file-item">📁 Legit_Casual.json <span style="float:right;font-size:12px;color:#7a6a9a;">безопасный</span></div>
-                <div class="file-item">📁 AFK_CoinFarm_Night.json <span style="float:right;font-size:12px;color:#7a6a9a;">ночной фарм</span></div>
+    -- Функция скрытия/показа меню
+    function toggleMenu()
+        menuVisible = not menuVisible
+        MainFrame.Visible = menuVisible
+        ShowBtn.Visible = not menuVisible
+    end
 
-                <div style="margin-top:12px;font-size:12px;color:#6a5a8a;background:#0d0d20;padding:8px 12px;border-radius:10px;">
-                    ✏️ Вы можете редактировать конфиги через текстовый редактор в папке эксплоита.
-                </div>
-            </div>
+    -- Main loop
+    RunService.Heartbeat:Connect(function()
+        updateESP()
+        aimAssist()
+        farmCoins()
+    end)
 
-            <!-- ===== TAB 6: MISC ===== -->
-            <div class="tab-content" id="tab6">
-                <h2>MISCELLANEOUS & SERVER UTILITIES</h2>
-                <div class="subhead">Server Info</div>
+    spawn(function()
+        while wait(0.2) do
+            if toggles.AutoFarm then
+                farmCoins()
+            end
+        end
+    end)
 
-                <div class="stat-row"><span class="label">🆔 JobId</span><span class="value" style="font-size:11px;">a1b2c3d4-... (Rejoin)</span></div>
-                <div class="stat-row"><span class="label">⏳ Server Age</span><span class="value">2h 14min</span></div>
-                <div class="stat-row"><span class="label">👥 Player Count</span><span class="value">11 / 12</span></div>
+    wait(0.5)
+    updateESP()
 
-                <div style="margin-top:10px;">
-                    <span class="mini-toggle off">Auto-Open Boxes</span>
-                    <span class="mini-toggle on">Auto-Equip Elite</span>
-                </div>
-                <div style="margin-top:8px;">
-                    <span class="mini-toggle on">Chat Spy: ACTIVE</span>
-                    <span class="mini-toggle on">Anti-Afk: PROTECTED</span>
-                </div>
-            </div>
-        </div>
+    print("[good] MM2 HUB загружен. Наслаждайся.")
+end
 
-        <!-- Нижний блок (футер) -->
-        <div class="panel-footer">
-            <div class="footer-stats">
-                <span>👤 <strong>Player123</strong></span>
-                <span>📦 Build: <strong>v4.2.1-Stable</strong></span>
-                <span>🟢 FPS: <strong>58.4</strong></span>
-                <span>📶 Ping: <strong>23ms</strong></span>
-                <span>🧠 Mem: <strong>1102 MB</strong></span>
-            </div>
-            <button class="panic-btn" id="panicBtn">🔴 PANIC BUTTON (UNLOAD CHEAT)</button>
-        </div>
-    </div>
-
-    <!-- ПРАВАЯ ПАНЕЛЬ (заглушка) -->
-    <div class="right-panel">
-        <span>⚙️ Правая панель<br><small style="font-size:16px;">(настройки выбранной вкладки)</small></span>
-    </div>
-</div>
-
-<script>
-    // Переключение вкладок
-    const navBtns = document.querySelectorAll('.nav-btn');
-    const tabContents = {
-        tab1: document.getElementById('tab1'),
-        tab2: document.getElementById('tab2'),
-        tab3: document.getElementById('tab3'),
-        tab4: document.getElementById('tab4'),
-        tab5: document.getElementById('tab5'),
-        tab6: document.getElementById('tab6'),
-    };
-
-    navBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Убрать активный класс у всех кнопок
-            navBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-
-            // Скрыть все вкладки
-            Object.values(tabContents).forEach(tab => tab.classList.remove('active'));
-
-            // Показать нужную вкладку
-            const target = this.dataset.tab;
-            if (tabContents[target]) {
-                tabContents[target].classList.add('active');
-            }
-        });
-    });
-
-    // Кнопка PANIC
-    document.getElementById('panicBtn').addEventListener('click', function() {
-        if (confirm('⚠️ Действительно выгрузить чит? Интерфейс будет стёрт.')) {
-            // В реальном скрипте здесь был бы код очистки.
-            // Для макета просто покажем сообщение.
-            const panel = document.getElementById('leftPanel');
-            panel.style.transition = 'all 0.3s ease';
-            panel.style.opacity = '0.3';
-            panel.style.filter = 'blur(4px)';
-            setTimeout(() => {
-                alert('🧹 Чит выгружен. Интерфейс очищен.');
-                panel.style.opacity = '1';
-                panel.style.filter = 'blur(0)';
-            }, 400);
-        }
-    });
-</script>
-
-</body>
-</html>
+-- =============================================
+-- 3. ЗАПУСК
+-- =============================================
+-- Запускаем загрузку с анимацией
+spawn(function()
+    loadScript()
+end)
